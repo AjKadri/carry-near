@@ -1,6 +1,8 @@
 # Carry
 
-Work in progress for the NEAR Hackathon. Licence: Apache-2.0 (see `LICENSE`).
+Work in progress for the NEAR Hackathon.
+
+Copyright 2026 AjKadri. Licensed under Apache-2.0 (see `LICENSE`).
 
 ## What exists today
 
