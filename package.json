@@ -1,0 +1,20 @@
+{
+  "name": "carry",
+  "version": "0.1.0",
+  "description": "Get paid from any chain. Your phone only carries a small amount; the rest sits in a reserve the phone cannot reach.",
+  "license": "Apache-2.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22.13" },
+  "workspaces": ["web"],
+  "scripts": {
+    "demo": "node scripts/demo.js",
+    "start": "node server/index.js",
+    "dev": "node scripts/dev.js",
+    "build": "npm run build -w web",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
