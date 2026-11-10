@@ -1,4 +1,4 @@
-// `npm run demo`: build the web app if needed, then start the server in mock mode.
+// `npm run demo`: build the web app if needed, then start Carry in mock mode.
 // Forces mock mode and a throwaway database, so it never touches keys or mainnet.
 import fs from 'node:fs';
 import { spawnSync, spawn } from 'node:child_process';
@@ -11,8 +11,8 @@ if (!fs.existsSync('web/dist/index.html')) {
 fs.rmSync('data/demo.db', { force: true });
 const env = { ...process.env, CARRY_MODE: 'mock', CARRY_DB: 'data/demo.db' };
 // Drop real keys from the child's environment so mock mode cannot use them.
-for (const k of ['RESERVE_KEY', 'POCKET_KEY', 'ONECLICK_API_KEY']) delete env[k];
+for (const k of ['RESERVE_KEY', 'POCKET_KEY', 'ONECLICK_API_KEY', 'PROD_APPROVER_SEED']) delete env[k];
 const child = spawn(process.execPath, ['server/index.js'], { stdio: 'inherit', env });
-const url = `http://127.0.0.1:${env.PORT || 8787}`;
-console.log(`\nHome view:  ${url}/home\nPhone view: ${url}/phone\n`);
+const home = `http://127.0.0.1:${env.PORT || 8787}`, pub = `http://127.0.0.1:${env.PUBLIC_PORT || 8788}`;
+console.log(`\nHome view:  ${home}/home\nPay link:   ${pub}/pay/${env.CARRY_HANDLE || 'demo'}\nPhone view: ${pub}/phone\n`);
 child.on('exit', (c) => process.exit(c ?? 0));
