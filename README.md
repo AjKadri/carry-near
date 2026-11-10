@@ -11,6 +11,7 @@ A runnable scaffold in **mock mode only**. Nothing here talks to NEAR, OutLayer 
 - Node/Express server with a SQLite activity log (`node:sqlite`, Node 22.13+).
 - React (Vite) web app with a Home view (`/home`) and a Phone view (`/phone`).
 - "Simulate a payment in" button (mock mode) that credits a simulated reserve.
+- `server/guard.js`: a pure function that decides which pending OutLayer approvals Carry's approver may vote on (refills to the pocket within the phone ceiling and the remaining refill allowance; the stored bill). It is unit-tested (`npm test`) but not yet connected to any signing code.
 - The phone endpoint (`/api/phone/state`) returns only pocket data. A test checks it never leaks the reserve.
 
 ## Run it
@@ -28,7 +29,7 @@ npm test
 
 ## Roadmap (not built)
 
-Pay page and 1Click intake, refill engine with caps, pre-approved bill, `npm run attack`, home login (passkey), pairing, live mode against OutLayer wallets. The home endpoints currently have no login, so the server listens on loopback only.
+Pay page and 1Click intake, wiring the guard to the approver key, refill engine with caps, pre-approved bill, `npm run attack`, home login (passkey), pairing, live mode against OutLayer wallets. The home endpoints currently have no login, so the server listens on loopback only.
 
 ## Disclosure
 
