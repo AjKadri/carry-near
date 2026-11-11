@@ -12,6 +12,7 @@ Copyright 2026 AjKadri. Licensed under Apache-2.0 (see `LICENSE`).
 - A refill moves min(refill allowance, reserve balance, ceiling headroom) from the reserve, independent of the payment amount after fees.
 - **Pre-approved bill**: stored from the home app; the phone triggers it by id only.
 - **Two apps, two ports.** The *home* app (bills, refill allowance, reserve balance, full log) accepts loopback connections only. The *public* app (pay page, phone API) has no route that creates a bill, changes an amount, raises the allowance or reads the reserve. Tests check this.
+- **`npm run attack`**: replays 30+ attack cases (phone tries to exceed caps, create or edit a bill, raise the allowance; leaked reserve key; altered bill amount and payee; second and simultaneous bill use; wrong-key, replayed, second and expired approval votes; refills above the allowance or ceiling, while halted or frozen; two triggers for one arrival). One PASS/FAIL line per case with the raw refusal; each refused request is shown still pending with balances unchanged. The recorded output is in `evidence/`. Mock output says it is not mainnet.
 - **Mock mode** (default, no keys): an in-memory stand-in for OutLayer and 1Click that speaks the same request shapes and verifies vote signatures. It proves the code paths, not mainnet.
 - SQLite activity log (`node:sqlite`, Node 22.13+), React (Vite) web app with plain placeholder styling.
 
@@ -41,7 +42,7 @@ npm test
 
 ## Roadmap (not built)
 
-`npm run attack`, home login (passkey), pairing, animations and final design, deployment behind a reverse proxy.
+a recorded live `npm run attack` run, home login (passkey), pairing, animations and final design, deployment behind a reverse proxy.
 
 ## Disclosure
 

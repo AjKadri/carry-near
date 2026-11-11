@@ -12,7 +12,8 @@
     "start": "node server/index.js",
     "dev": "node scripts/dev.js",
     "build": "npm run build -w web",
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "attack": "node scripts/attack.js"
   },
   "dependencies": {
     "express": "^5.1.0"

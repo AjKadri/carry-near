@@ -20,7 +20,7 @@ export function createMock({ now = Date.now, settleDelayMs = 1500, tweakApproval
   const limits = { reserve: { tx: 20_000_000n, day: 60_000_000n }, pocket: { tx: 10_000_000n, day: 20_000_000n } };
   const whitelist = { reserve: new Set([MOCK_POCKET_ACCOUNT, MOCK_LANDLORD, MOCK_EXIT]), pocket: null };
   const reqs = new Map(), approvals = new Map(), idem = new Map();
-  const m = { approver, state: { frozen: false }, bal, reqs, approvals };
+  const m = { approver, state: { frozen: false, frozenReserve: false }, bal, reqs, approvals };
   const roleOf = (auth) => (auth === 'reserve' ? 'reserve' : auth === 'pocket' || auth?.key === MOCK_POCKET_KEY ? 'pocket' : null);
   const deny = (message) => ({ status: 403, body: { error: 'policy_denied', message } });
 
@@ -32,7 +32,7 @@ export function createMock({ now = Date.now, settleDelayMs = 1500, tweakApproval
   }
   function moneyOp(role, flow, body, headers) {
     if (headers['Idempotency-Key'] && idem.has(headers['Idempotency-Key'])) return idem.get(headers['Idempotency-Key']);
-    if (m.state.frozen && role === 'pocket') return { status: 403, body: { error: 'wallet_frozen', message: 'Wallet is frozen by controller' } };
+    if ((m.state.frozen && role === 'pocket') || (m.state.frozenReserve && role === 'reserve')) return { status: 403, body: { error: 'wallet_frozen', message: 'Wallet is frozen by controller' } };
     if (body.token !== USDC_TOKEN) return deny(`Token '${body.token}' is not allowed by policy`);
     if (!/^[1-9][0-9]*$/.test(String(body.amount))) return { status: 400, body: { error: 'bad_request', message: 'bad amount' } };
     const amount = BigInt(body.amount), l = limits[role];
@@ -40,7 +40,7 @@ export function createMock({ now = Date.now, settleDelayMs = 1500, tweakApproval
     if (amount > l.tx) return deny(`Per-transaction limit exceeded for ${USDC_TOKEN}: ${amount} > ${l.tx}`);
     if (usage[role] + amount > l.day) return deny(`Daily limit exceeded for ${USDC_TOKEN}: ${usage[role]} + ${amount} > ${l.day}`);
     if (bal[role] < amount) return { status: 400, body: { error: 'insufficient_balance', message: 'insufficient confidential balance' } };
-    const r = { id: uuid(), role, flow, to: body.to, amount, status: 'pending', result: null };
+    const r = { id: uuid(), role, flow, to: body.to, amount, status: 'pending', result: null, created_at: new Date(now()).toISOString() };
     reqs.set(r.id, r);
     let out;
     if (role === 'reserve') { // every reserve op waits for approval, like the locked mainnet policy
@@ -53,16 +53,19 @@ export function createMock({ now = Date.now, settleDelayMs = 1500, tweakApproval
     if (headers['Idempotency-Key']) idem.set(headers['Idempotency-Key'], out);
     return out;
   }
-  function vote(id, body) {
+  function vote(id, body, kind = 'approve') {
     const a = approvals.get(id);
     if (!a) return { status: 404, body: { error: 'not_found' } };
     if (a.status !== 'pending') return { status: 409, body: { error: 'conflict', message: `this approval is already ${a.status}; it takes no more votes` } };
+    if (Date.parse(a.expires_at) <= now()) return { status: 409, body: { error: 'conflict', message: 'this approval has expired; it takes no more votes' } };
     if (body.account_id !== approver.account) return { status: 403, body: { error: 'not_approver', message: `${body.account_id} is not an approver of this wallet's policy` } };
     if (body.public_key !== approver.pubkey) return { status: 401, body: { error: 'invalid_signature', message: `public key ${body.public_key} is not a key of ${body.account_id}` } };
-    const ok = verifyNep413({ pubkey: body.public_key, message: `approve:${id}:${wallet_pubkey}:${a.request_hash}`, recipient: 'outlayer.near', nonce: Buffer.from(body.nonce, 'base64'), signature: Buffer.from(body.signature, 'base64') });
+    const ok = verifyNep413({ pubkey: body.public_key, message: `${kind}:${id}:${wallet_pubkey}:${a.request_hash}`, recipient: 'outlayer.near', nonce: Buffer.from(body.nonce, 'base64'), signature: Buffer.from(body.signature, 'base64') });
     if (!ok) return { status: 401, body: { error: 'invalid_signature', message: 'NEP-413 signature verification failed' } };
+    const r = reqs.get(a.request_id);
+    if (kind === 'reject') { a.status = 'rejected'; r.status = 'rejected'; return { status: 200, body: { approval_id: id, status: 'rejected', approved: 0, required: 1, request_id: a.request_id } }; }
     a.status = 'approved'; a.approved = 1;
-    const r = reqs.get(a.request_id); r.status = 'processing'; r.doneAt = now() + settleDelayMs;
+    r.status = 'processing'; r.doneAt = now() + settleDelayMs;
     return { status: 200, body: { approval_id: id, status: 'approved', approved: 1, required: 1, request_id: a.request_id } };
   }
   function tick() { // settle processing requests whose time has come
@@ -73,11 +76,15 @@ export function createMock({ now = Date.now, settleDelayMs = 1500, tweakApproval
     const role = roleOf(auth);
     let mt;
     if (method === 'GET' && path === '/wallet/v1/policy') return role ? { status: 200, body: { version: role === 'reserve' ? 2 : 4, locked: true, frozen: role === 'pocket' && m.state.frozen, usage: {} } } : { status: 401, body: { error: 'unauthorized' } };
-    if (method === 'GET' && path === '/wallet/v1/confidential/balance') return role ? { status: 200, body: { balances: [{ token: USDC_TOKEN, balance: String(bal[role]) }] } } : { status: 401, body: { error: 'unauthorized' } };
+    if (method === 'GET' && path === '/wallet/v1/confidential/balance') return role ? { status: 200, body: { balances: [{ token: USDC_TOKEN, balance: String(bal[role]) }], account_id: role === 'reserve' ? MOCK_RESERVE_ACCOUNT : MOCK_POCKET_ACCOUNT } } : { status: 401, body: { error: 'unauthorized' } };
     if (method === 'POST' && (mt = path.match(/^\/wallet\/v1\/confidential\/(transfer|withdraw)$/))) return role ? moneyOp(role, mt[1], body, headers) : { status: 401, body: { error: 'unauthorized' } };
     if (method === 'GET' && path === '/wallet/v1/pending_approvals') return role === 'reserve' ? { status: 200, body: { approvals: [...approvals.values()].filter((a) => a.status === 'pending').map(({ status, ...a }) => tweakApproval(structuredClone(a))) } } : { status: 401, body: { error: 'unauthorized' } };
     if (method === 'GET' && (mt = path.match(/^\/wallet\/v1\/approval\/(.+)$/))) { const a = approvals.get(mt[1]); return a ? { status: 200, body: { id: a.approval_id, wallet_pubkey, request_hash: a.request_hash, status: a.status } } : { status: 404, body: { error: 'not_found' } }; }
     if (method === 'POST' && (mt = path.match(/^\/wallet\/v1\/approve\/(.+)$/))) return vote(mt[1], body ?? {});
+    if (method === 'POST' && (mt = path.match(/^\/wallet\/v1\/reject\/(.+)$/))) return vote(mt[1], body ?? {}, 'reject');
+    if (method === 'GET' && path === '/wallet/v1/requests') return role === 'reserve' ? { status: 200, body: { requests: [...reqs.values()].filter((r) => r.role === 'reserve').map((r) => ({ request_id: r.id, type: 'confidential_' + r.flow, status: r.status === 'pending' ? 'pending_approval' : r.status, created_at: r.created_at })) } } : { status: 401, body: { error: 'unauthorized' } };
+    if (method === 'POST' && (mt = path.match(/^\/wallet\/v1\/reject\/(.+)$/))) return vote(mt[1], body ?? {}, 'reject');
+    if (method === 'GET' && path === '/wallet/v1/requests') return role === 'reserve' ? { status: 200, body: { requests: [...reqs.values()].filter((r) => r.role === 'reserve').map((r) => ({ request_id: r.id, type: 'confidential_' + r.flow, status: r.status === 'pending' ? 'pending_approval' : r.status, created_at: r.created_at })) } } : { status: 401, body: { error: 'unauthorized' } };
     if (method === 'GET' && (mt = path.match(/^\/wallet\/v1\/requests\/(.+)$/))) { const r = reqs.get(mt[1]); return r ? { status: 200, body: { request_id: r.id, status: r.status === 'pending' ? 'pending_approval' : r.status, result: r.result } } : { status: 404, body: { error: 'not_found' } }; }
     return { status: 404, body: { error: 'not_found', message: 'Unknown endpoint' } };
   };

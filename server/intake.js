@@ -1,7 +1,7 @@
 // Pay link intake: issue 1Click partner-key deposit addresses (Solana USDC -> reserve, confidential) and track arrivals.
 import { issueQuote, getStatus } from './oneclick.js';
 
-export const MIN_PAY = 100_000;          // 0.1 USDC
+export const MIN_PAY = 50_000;           // 0.05 USDC (1Click quoted 0.05 live on 11 Nov; it refuses 0.01: "Amount is too low for bridge")
 export const MAX_PAY = 10_000_000_000;   // 10,000 USDC
 const DEADLINE_MS = 72 * 3600e3;
 const REISSUE_MARGIN_MS = 12 * 3600e3;   // an address with less than this left is not handed out again
