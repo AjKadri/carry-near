@@ -12,6 +12,20 @@
 export const USDC_TOKEN = 'nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1';
 export const PHONE_CEILING = 20_000_000n; // 20 USDC, micro-USDC
 
+// An approval lives 24 h at OutLayer. Its vote endpoint does NOT refuse a late vote (live finding D5, 11 Nov 2026),
+// so Carry never votes on an approval that has expired or is older than a few minutes.
+export const APPROVAL_LIFETIME_MS = 24 * 3600e3;
+export const APPROVAL_MAX_AGE_MS = 5 * 60e3;
+export function checkFresh(expiresAt, now) {
+  if (typeof now !== 'number') return { code: 'GUARD_ERROR', reason: 'now must be a number' };
+  const exp = typeof expiresAt === 'string' ? Date.parse(expiresAt) : NaN;
+  if (!Number.isFinite(exp)) return { code: 'MALFORMED', reason: 'expires_at missing or unreadable' };
+  if (now >= exp) return { code: 'APPROVAL_EXPIRED', reason: `approval expired at ${expiresAt}` };
+  const age = now - (exp - APPROVAL_LIFETIME_MS);
+  if (age > APPROVAL_MAX_AGE_MS) return { code: 'APPROVAL_EXPIRED', reason: `approval is ${Math.round(age / 1000)}s old (limit ${APPROVAL_MAX_AGE_MS / 1000}s)` };
+  return null;
+}
+
 const OP_KEYS = new Set(['amount', 'chain', 'flow', 'kind', 'to', 'token']);
 const DATA_KEYS = new Set(['amount', 'chain', 'to', 'token', 'destination_asset']);
 const AMOUNT_RE = /^[1-9][0-9]{0,30}$/; // positive integer, no sign, no leading zero, no decimals
@@ -62,6 +76,8 @@ function decideInner(approval, ctx) {
   if (data.chain !== undefined && data.chain !== op.chain) return no('DATA_MISMATCH', 'request_data.chain does not match op');
   if (data.destination_asset !== undefined && data.destination_asset !== USDC_TOKEN) return no('WRONG_TOKEN', 'destination_asset is not NEAR USDC');
 
+  const stale = checkFresh(approval.expires_at, ctx?.now);
+  if (stale) return no(stale.code, stale.reason);
   const base = { requestHash: hash, approvalId: id };
   if (op.flow === 'transfer') return { ...refill(op, amount, ctx), ...base };
   if (op.flow === 'withdraw') return { ...bill(op, amount, data, ctx), ...base };

@@ -7,15 +7,16 @@ const LANDLORD = 'd7041ab1063b3f017ae4d43857b225c2897b0d39682cbd2048c539a04b4805
 const EXIT = 'nearhacka.near';
 const STRANGER = '57b6a7811afda6ddafb46c5bac8e2982f71719667be6895da87aa14af848fc8a';
 const NOW = 1_800_000_000_000;
+const FRESH = new Date(NOW + 24 * 3600e3 - 1000).toISOString(); // an approval created one second ago (lives 24 h)
 
 // Shapes copied from real pending approvals (carry-spike/evidence/t7.log, Tue 10 Nov 2026).
 const transfer = (to, amount, over = {}) => ({
-  approval_id: 'a1', request_id: 'r1', type: 'confidential', request_hash: 'h1',
+  approval_id: 'a1', request_id: 'r1', type: 'confidential', request_hash: 'h1', expires_at: FRESH,
   request_data: { to, token: USDC_TOKEN, amount },
   op: { amount, chain: 'near', flow: 'transfer', kind: 'confidential', to, token: USDC_TOKEN }, ...over,
 });
 const withdraw = (to, amount, over = {}) => ({
-  approval_id: 'a2', request_id: 'r2', type: 'confidential', request_hash: 'h2',
+  approval_id: 'a2', request_id: 'r2', type: 'confidential', request_hash: 'h2', expires_at: FRESH,
   request_data: { to, chain: 'near', token: USDC_TOKEN, amount, destination_asset: USDC_TOKEN },
   op: { amount, chain: 'near', flow: 'withdraw', kind: 'confidential', to, token: USDC_TOKEN }, ...over,
 });
@@ -58,9 +59,11 @@ test('case 5: bill to an altered payee is refused', () => {
 });
 test('case 6: second use of the bill is refused', () => refused(decide(withdraw(LANDLORD, '15000000'), ctx({ bills: [bill({ used: true })] })), 'BILL_USED'));
 test('case 7: bill after expiry is refused (and at the expiry instant)', () => {
-  refused(decide(withdraw(LANDLORD, '15000000'), ctx({ now: NOW + 3600_001 })), 'BILL_EXPIRED');
-  refused(decide(withdraw(LANDLORD, '15000000'), ctx({ now: NOW + 3600_000 })), 'BILL_EXPIRED');
-  ok(decide(withdraw(LANDLORD, '15000000'), ctx({ now: NOW + 3599_999 })), 'BILL_OK');
+  const freshAt = (now) => new Date(now + 24 * 3600e3 - 1000).toISOString(); // the approval was created a second before `now`
+  const at = (now) => ({ now, ...{} });
+  refused(decide(withdraw(LANDLORD, '15000000', { expires_at: freshAt(NOW + 3600_001) }), ctx(at(NOW + 3600_001))), 'BILL_EXPIRED');
+  refused(decide(withdraw(LANDLORD, '15000000', { expires_at: freshAt(NOW + 3600_000) }), ctx(at(NOW + 3600_000))), 'BILL_EXPIRED');
+  ok(decide(withdraw(LANDLORD, '15000000', { expires_at: freshAt(NOW + 3599_999) }), ctx(at(NOW + 3599_999))), 'BILL_OK');
 });
 test('with two bills for one payee, the exact-amount unused one is picked', () => {
   const d = decide(withdraw(LANDLORD, '9000000'), ctx({ bills: [bill(), bill({ id: 'water', amount: '9000000' })] }));
@@ -71,6 +74,25 @@ test('a withdraw to the pocket is not a bill', () => refused(decide(withdraw(POC
 test('a withdraw on another chain is refused', () => {
   const a = withdraw(LANDLORD, '15000000'); a.op.chain = 'solana'; a.request_data.chain = 'solana';
   refused(decide(a, ctx()), 'WRONG_CHAIN');
+});
+
+// ---- D5 hardening: never vote on an expired or stale approval
+test('APPROVAL_EXPIRED: an approval past expires_at is refused, for refills and bills', () => {
+  const exp = new Date(NOW - 1000).toISOString();
+  refused(decide(transfer(POCKET, '1000', { expires_at: exp }), ctx()), 'APPROVAL_EXPIRED');
+  refused(decide(withdraw(LANDLORD, '15000000', { expires_at: exp }), ctx()), 'APPROVAL_EXPIRED');
+  refused(decide(transfer(POCKET, '1000', { expires_at: new Date(NOW).toISOString() }), ctx()), 'APPROVAL_EXPIRED'); // at the instant
+});
+test('APPROVAL_EXPIRED: an approval older than 5 minutes is refused even though it has not expired', () => {
+  const at = (ageMs) => new Date(NOW - ageMs + 24 * 3600e3).toISOString();
+  ok(decide(transfer(POCKET, '1000', { expires_at: at(299_000) }), ctx()), 'REFILL_OK');
+  ok(decide(transfer(POCKET, '1000', { expires_at: at(300_000) }), ctx()), 'REFILL_OK');   // exactly 5 min
+  refused(decide(transfer(POCKET, '1000', { expires_at: at(300_001) }), ctx()), 'APPROVAL_EXPIRED');
+  refused(decide(withdraw(LANDLORD, '15000000', { expires_at: at(3600_000) }), ctx()), 'APPROVAL_EXPIRED');
+  refused(decide(transfer(POCKET, '1000', { expires_at: at(23 * 3600e3) }), ctx()), 'APPROVAL_EXPIRED');
+});
+test('a missing or unreadable expires_at is a shape problem and is refused', () => {
+  for (const v of [undefined, null, '', 'tomorrow', 12345]) refused(decide(transfer(POCKET, '1000', { expires_at: v }), ctx()), 'MALFORMED');
 });
 
 // ---- everything else gets no vote
@@ -120,7 +142,7 @@ test('fuzz: approvals only ever happen for the two allowed shapes', () => {
   let approved = 0;
   for (let i = 0; i < 5000; i++) {
     const to = pick(tos), amount = pick(amts), flow = pick(flows), token = pick(toks), chain = pick(chains), type = pick(types);
-    const a = { approval_id: 'x', type, request_hash: 'h', request_data: { to, token, amount, chain }, op: { amount, chain, flow, kind: 'confidential', to, token } };
+    const a = { approval_id: 'x', type, request_hash: 'h', expires_at: FRESH, request_data: { to, token, amount, chain }, op: { amount, chain, flow, kind: 'confidential', to, token } };
     const c = ctx({ pocketBalance: BigInt(pick([0, 5_000_000, 19_999_999])), allowance: BigInt(pick([0, 1_000_000, 40_000_000])) });
     const d = decide(a, c);
     if (!d.approve) continue;

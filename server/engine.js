@@ -103,7 +103,7 @@ export function makeEngine({ store, ol, pocketAccount, now = Date.now, topUpEver
         r = store.refill(id);
       }
       if (r.state === 'approved') {
-        const v = await ol.vote(r.approval_id, r.request_hash);
+        const v = await ol.vote(r.approval_id, r.request_hash, { now: now() });
         if (v.status === 200 || v.status === 409) { store.updateRefill(id, { state: 'voted' }); store.log('refill_voted', r.amount, { http: v.status, approval_id: r.approval_id }); }
         else return fail(id, 'failed', 'refill_failed', r.amount, { step: 'vote', http: v.status, raw: JSON.parse(scrub(v.body)) });
         r = store.refill(id);
@@ -118,7 +118,10 @@ export function makeEngine({ store, ol, pocketAccount, now = Date.now, topUpEver
         }
       }
     } catch (err) {
-      if (err.code === 'HASH_CHANGED') return fail(id, 'refused', 'refill_refused', r.amount, { step: 'vote', code: 'HASH_CHANGED', reason: err.message });
+      if (['HASH_CHANGED', 'APPROVAL_EXPIRED', 'STALE_UNREADABLE'].includes(err.code)) { // no vote was cast, so nothing can execute: give the allowance back
+        store.releaseRefill(id);
+        return fail(id, 'refused', 'refill_refused', r.amount, { step: 'vote', code: err.code, reason: err.message });
+      }
       store.log('refill_error', r.amount, { state: r.state, error: err.message }, false); // state stays; next cycle retries
     }
   }
@@ -144,7 +147,10 @@ export function makeEngine({ store, ol, pocketAccount, now = Date.now, topUpEver
     if (!store.markBillUsed(d.consume.billId, res.body.request_id)) return { ok: false, code: 'BILL_USED' }; // consume BEFORE voting
     store.log('guard_decision', Number(bill.amount), { id, approve: true, code: d.code });
     let v;
-    try { v = await ol.vote(res.body.approval_id, d.requestHash); } catch (err) { store.log('bill_error', Number(bill.amount), { id, error: err.message }, false); return { ok: false, code: err.code ?? 'VOTE_ERROR' }; }
+    try { v = await ol.vote(res.body.approval_id, d.requestHash, { now: now() }); } catch (err) {
+      if (['HASH_CHANGED', 'APPROVAL_EXPIRED', 'STALE_UNREADABLE'].includes(err.code)) store.unuseBill(id); // never voted, so the bill was not paid
+      store.log('bill_error', Number(bill.amount), { id, error: err.message, code: err.code }, false); return { ok: false, code: err.code ?? 'VOTE_ERROR' };
+    }
     if (v.status !== 200 && v.status !== 409) { store.log('bill_failed', Number(bill.amount), { id, http: v.status, raw: JSON.parse(scrub(v.body)) }, false); return { ok: false, code: 'VOTE_FAILED' }; }
     const s = await settle(ol, 'reserve', res.body.request_id, settleOpts);
     if (s.status === 'success') { store.log('bill_paid', Number(bill.amount), { id, payee: bill.payee, request_id: res.body.request_id }, true); return { ok: true, requestId: res.body.request_id }; }

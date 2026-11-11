@@ -2,7 +2,7 @@
 // Live transport = fetch. The mock (server/mock.js) is a transport too, so the engine runs the same code in both modes.
 import crypto from 'node:crypto';
 import { signNep413 } from './nep413.js';
-import { USDC_TOKEN } from './guard.js';
+import { USDC_TOKEN, checkFresh } from './guard.js';
 
 export function liveTransport({ base, keys }) {
   return async (auth, method, path, body, headers = {}) => {
@@ -42,11 +42,13 @@ export function makeOutLayer(transport, { approver, recipient = 'outlayer.near' 
     },
     request: (auth, id) => transport(auth, 'GET', `/wallet/v1/requests/${id}`),
     // Sign and send ONE approve vote. The caller must already have persisted what the guard allowed.
-    async vote(approvalId, vettedHash) {
+    async vote(approvalId, vettedHash, { now = Date.now() } = {}) {
       if (!approver) throw new Error('no approver configured');
       const d = await transport(null, 'GET', `/wallet/v1/approval/${approvalId}`);
       if (d.status !== 200) throw new Error(`approval detail failed: HTTP ${d.status}`);
       if (d.body.request_hash !== vettedHash) { const e = new Error('request_hash changed after the guard vetted it; not voting'); e.code = 'HASH_CHANGED'; throw e; }
+      const stale = checkFresh(d.body.expires_at, now); // never vote late: OutLayer's vote endpoint would accept it
+      if (stale) { const e = new Error(`not voting: ${stale.reason}`); e.code = stale.code === 'APPROVAL_EXPIRED' ? 'APPROVAL_EXPIRED' : 'STALE_UNREADABLE'; throw e; }
       const nonce = crypto.randomBytes(32);
       const sig = signNep413({ seedHex: approver.seed, message: `approve:${approvalId}:${d.body.wallet_pubkey}:${d.body.request_hash}`, recipient, nonce });
       return transport(null, 'POST', `/wallet/v1/approve/${approvalId}`, { signature: sig.toString('base64'), public_key: approver.pubkey, account_id: approver.account, nonce: nonce.toString('base64') });

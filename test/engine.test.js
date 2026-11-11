@@ -100,8 +100,9 @@ test('GUARD_SHAPE_CHANGED: an unrecognised approval field halts refills loudly, 
 });
 
 test('stored bill: paid once by id; amount/payee in the body refused; second use and expiry refused', async () => {
-  let clock = Date.parse('2026-11-12T10:00:00Z');
-  const t = await boot({ allowance: 0, now: () => clock, mockOpts: { now: Date.now } }); // the mock settles on real time
+  let off = Date.parse('2026-11-12T10:00:00Z') - Date.now(); // a fake but advancing clock, shared by the service and the mock
+  const clock = () => Date.now() + off;
+  const t = await boot({ allowance: 0, now: clock, mockOpts: { now: clock } });
   try {
     t.svc.mock.credit(30_000_000);
     const make = (id, amountUsdc, expiresAt) => t.j(t.home, '/api/home/bills', { method: 'POST', body: { id, label: id, payee: MOCK_LANDLORD, amountUsdc, expiresAt } });
@@ -115,7 +116,7 @@ test('stored bill: paid once by id; amount/payee in the body refused; second use
     assert.equal(t.svc.mock.bal.reserve, 15n * M);
     const second = await pay('rent'); assert.equal(second.status, 422); assert.equal(second.body.code, 'BILL_USED');
     assert.equal(t.svc.mock.bal.reserve, 15n * M);
-    clock += 3600e3; // past 'old' expiry
+    off += 3600e3; // past 'old' expiry
     const late = await pay('old'); assert.equal(late.status, 422); assert.equal(late.body.code, 'BILL_EXPIRED');
     assert.equal(t.svc.mock.bal.reserve, 15n * M);
     assert.equal((await pay('nope')).body.code, 'NO_SUCH_BILL');

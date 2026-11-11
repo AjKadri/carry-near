@@ -311,6 +311,25 @@ await runCase('C4', 'second use of the bill, later', async () => {
   return (r.status === 422 && r.body?.code === 'BILL_USED' && s0.reserve === s1.reserve && added(before, after) === 0 ? PASS : FAIL)(`HTTP ${r.status} ${raw({ body: r.body })} | reserve ${s0.reserve} -> ${s1.reserve}; requests created ${added(before, after)}`);
 });
 
+// ---------------- D7: the D5 hardening. Carry never votes on an expired or stale approval.
+await runCase('D7', 'service refuses to vote on an expired or stale approval (guard and voter, code APPROVAL_EXPIRED)', async () => {
+  E.store.setAllowance(1_000_000n); // harness setup (the guard needs room to approve the control case)
+  const before = await snap(E);
+  const res = await E.ol.reserveTransfer(E.pocketAccount, 10_000);
+  if (res.status !== 200 || res.body?.status !== 'pending_approval') return FAIL(`setup: ${raw(res)}`);
+  const approval = (await E.ol.pendingApprovals()).find((a) => a.approval_id === res.body.approval_id);
+  const at = async (offsetMs) => decide(approval, await ctxNow(E, { now: E.now() + offsetMs }));
+  const control = await at(0), stale = await at(6 * 60e3), expired = await at(25 * 3600e3);
+  const voterErrs = [];
+  for (const offsetMs of [6 * 60e3, 25 * 3600e3]) { try { await E.ol.vote(res.body.approval_id, res.body.request_hash, { now: E.now() + offsetMs }); voterErrs.push('VOTED'); } catch (err) { voterErrs.push(err.code); } }
+  await sleep(WAIT);
+  const st = await E.ol.request('reserve', res.body.request_id); const after = await snap(E);
+  const cleaned = await rejectIt(E, res.body.approval_id);
+  E.store.setAllowance(5_000n);
+  const ok = control.approve === true && stale.code === 'APPROVAL_EXPIRED' && expired.code === 'APPROVAL_EXPIRED' && voterErrs.every((c) => c === 'APPROVAL_EXPIRED') && st.body?.status === 'pending_approval' && same(before, after);
+  return (ok ? PASS : FAIL)(`control (fresh): ${control.code}; 6 min old: ${stale.code} (${stale.reason}); 25 h later: ${expired.code}; voter at 6 min / 25 h: ${voterErrs.join(' / ')} | proof: request ${st.body?.status}, ${fmt(before)} -> ${fmt(after)} | cleanup: reject -> ${cleaned}`);
+});
+
 // ---------------- D5: vote on an expired approval. If OutLayer ACCEPTS it, stop and report; never retry.
 let finding = false;
 await runCase('D5', 'vote on an EXPIRED approval', async () => {
