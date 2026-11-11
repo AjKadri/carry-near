@@ -169,3 +169,14 @@ test('pay link: unknown handle 404, bad refund address 400, same payer+amount re
     assert.equal((await t.j(t.pub, '/api/pay/demo/status?address=unknown')).status, 404);
   } finally { t.close(); }
 });
+
+test('security headers are set (CSP limits script to the app itself)', async () => {
+  const t = await boot();
+  try {
+    const r = await fetch(t.pub + '/api/health');
+    assert.match(r.headers.get('content-security-policy'), /default-src 'self'/);
+    assert.match(r.headers.get('content-security-policy'), /frame-ancestors 'none'/);
+    assert.equal(r.headers.get('x-content-type-options'), 'nosniff');
+    assert.equal(r.headers.get('x-powered-by'), null);
+  } finally { t.close(); }
+});

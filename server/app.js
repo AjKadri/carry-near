@@ -19,6 +19,11 @@ export function createApp(svc) {
   const { store, engine, ol, intake, config, auth, pairing } = svc;
   const app = express();
   app.set('trust proxy', 'loopback'); // Caddy on the same host; req.ip is then the real client for the blocked log
+  app.disable('x-powered-by');
+  app.use((_req, res, next) => { // limits what script can run in the page that holds the home key
+    res.set({ 'Content-Security-Policy': "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'", 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer', 'X-Frame-Options': 'DENY' });
+    next();
+  });
   app.use(express.json({ limit: '10kb', verify: (req, _res, buf) => { req.rawBody = buf; } })); // the signature covers the raw bytes
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
   app.get('/api/mode', (_req, res) => res.json({ mode: config.mode, handle: config.handle, publicUrl: config.publicUrl }));
