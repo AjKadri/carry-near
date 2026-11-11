@@ -13,6 +13,6 @@ const env = { ...process.env, CARRY_MODE: 'mock', CARRY_DB: 'data/demo.db' };
 // Drop real keys from the child's environment so mock mode cannot use them.
 for (const k of ['RESERVE_KEY', 'POCKET_KEY', 'ONECLICK_API_KEY', 'PROD_APPROVER_SEED']) delete env[k];
 const child = spawn(process.execPath, ['server/index.js'], { stdio: 'inherit', env });
-const home = `http://127.0.0.1:${env.PORT || 8787}`, pub = `http://127.0.0.1:${env.PUBLIC_PORT || 8788}`;
-console.log(`\nHome view:  ${home}/home\nPay link:   ${pub}/pay/${env.CARRY_HANDLE || 'demo'}\nPhone view: ${pub}/phone\n`);
+const base = `http://127.0.0.1:${env.PORT || 8787}`;
+console.log(`\nHome view:  ${base}/home   (enter the setup code printed below)\nPay link:   ${base}/pay/${env.CARRY_HANDLE || 'demo'}\nPhone view: ${base}/phone (pair it from Home)\n`);
 child.on('exit', (c) => process.exit(c ?? 0));

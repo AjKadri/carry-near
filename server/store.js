@@ -16,6 +16,7 @@ export function openStore(file) {
       id INTEGER PRIMARY KEY AUTOINCREMENT, key TEXT NOT NULL UNIQUE, arrival TEXT, amount INTEGER NOT NULL,
       state TEXT NOT NULL, request_id TEXT, approval_id TEXT, request_hash TEXT,
       reserved INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, detail TEXT NOT NULL DEFAULT '{}');
+    CREATE TABLE IF NOT EXISTS nonces (nonce TEXT PRIMARY KEY, expires INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS bills (
       id TEXT PRIMARY KEY, label TEXT NOT NULL, payee TEXT NOT NULL, amount INTEGER NOT NULL,
       expires_at INTEGER NOT NULL, used INTEGER NOT NULL DEFAULT 0, used_at TEXT, request_id TEXT);

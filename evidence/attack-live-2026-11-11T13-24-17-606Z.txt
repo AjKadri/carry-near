@@ -1,0 +1,14 @@
+# Carry attack run — LIVE (mainnet, locked wallets, tiny amounts) — 2026-11-11T13:24:14.440Z
+# wallets at start: reserve v2 locked=true frozen=false | pocket v4 locked=true frozen=false
+# start balances: reserve 469584, pocket 1260000
+PASS — C6a — phone creates a bill — HTTP 401 {"error":"unauthorized"} (no /api/phone/ equivalent: 404) | guard state unchanged: true | logged as home_blocked: 1
+PASS — C6b — phone edits a bill amount — HTTP 401 {"error":"unauthorized"} (no /api/phone/ equivalent: 404) | guard state unchanged: true | logged as home_blocked: 1
+PASS — C6c — phone raises the refill allowance — HTTP 401 {"error":"unauthorized"} (no /api/phone/ equivalent: 404) | guard state unchanged: true | logged as home_blocked: 1
+PASS — H1 — any client without the laptop key calls home routes (state, log, allowance, halt, exit, pairing) — 8 calls, all HTTP 401 {"error":"unauthorized"}: true | guard state unchanged: true | OutLayer requests created: 0 | logged as home_blocked: 8/8
+PASS — H2 — replay a genuinely signed request — first: HTTP 200; identical bytes again: HTTP 401 {"error":"unauthorized"} | log reason: replayed_nonce
+PASS — H3 — tampered body: a valid signature for one allowance, a different one sent — HTTP 401 {"error":"unauthorized"} | log reason: bad_signature | allowance unchanged: true
+PASS — H4 — stale and future timestamps (61 s either way) — -61s: HTTP 401, 61s: HTTP 401 | log reason: stale_timestamp
+PASS — H5 — a different device key signs a home request — HTTP 401 {"error":"unauthorized"} | log reason: bad_signature
+PASS — H6 — the blocked attempts are visible in the home log (read with the laptop key) — HTTP 200; 16 blocked entries, reasons: bad_signature, missing_or_malformed_headers, replayed_nonce, stale_timestamp; none carries a body or key
+
+# SUMMARY (live): 9 PASS, 0 FAIL, 0 SKIP, 0 INFO | live spend counter 0 USDC (cap 0.25)

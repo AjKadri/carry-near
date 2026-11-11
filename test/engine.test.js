@@ -94,7 +94,7 @@ test('GUARD_SHAPE_CHANGED: an unrecognised approval field halts refills loudly, 
     assert.equal(t.svc.mock.bal.pocket, 0n);
     assert.equal(t.svc.store.allowance(), 40_000_000n); // nothing reserved
     assert.ok([...t.svc.mock.approvals.values()].every((a) => a.status === 'pending')); // no vote was cast
-    const home = await t.j(t.home, '/api/home/state');
+    const home = await t.hj('/api/home/state');
     assert.equal(home.body.halted.code, 'GUARD_SHAPE_CHANGED');
   } finally { t.close(); }
 });
@@ -105,7 +105,7 @@ test('stored bill: paid once by id; amount/payee in the body refused; second use
   const t = await boot({ allowance: 0, now: clock, mockOpts: { now: clock } });
   try {
     t.svc.mock.credit(30_000_000);
-    const make = (id, amountUsdc, expiresAt) => t.j(t.home, '/api/home/bills', { method: 'POST', body: { id, label: id, payee: MOCK_LANDLORD, amountUsdc, expiresAt } });
+    const make = (id, amountUsdc, expiresAt) => t.hj('/api/home/bills', { method: 'POST', body: { id, label: id, payee: MOCK_LANDLORD, amountUsdc, expiresAt } });
     assert.equal((await make('rent', 15, '2026-11-12T12:00:00Z')).status, 200);
     assert.equal((await make('old', 2, '2026-11-12T10:30:00Z')).status, 200);
     const pay = (id, body) => t.j(t.pub, `/api/phone/bills/${id}/pay`, { method: 'POST', body: body ?? {} });

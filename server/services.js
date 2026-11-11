@@ -4,7 +4,9 @@ import { liveTransport, makeOutLayer } from './outlayer.js';
 import { liveOneClick } from './oneclick.js';
 import { makeIntake } from './intake.js';
 import { makeEngine } from './engine.js';
-import { createMock, MOCK_POCKET_ACCOUNT, MOCK_RESERVE_ACCOUNT } from './mock.js';
+import { createMock, MOCK_POCKET_ACCOUNT, MOCK_RESERVE_ACCOUNT, MOCK_POCKET_KEY } from './mock.js';
+import { makeHomeAuth } from './homeauth.js';
+import { makePairing } from './pairing.js';
 
 export function createServices(config = loadConfig(), { now = Date.now, mockOpts = {}, settleOpts } = {}) {
   const store = openStore(config.dbPath);
@@ -25,9 +27,12 @@ export function createServices(config = loadConfig(), { now = Date.now, mockOpts
   const ol = makeOutLayer(transport, { approver });
   const intake = makeIntake({ store, oc, reserveAccount, handle: config.handle, now });
   const engine = makeEngine({ store, ol, pocketAccount, now, topUpEveryMs: config.topUpEveryMs, settleOpts });
+  const auth = makeHomeAuth({ store, now });
+  const pocketCredential = () => ({ pocketKey: config.mode === 'mock' ? MOCK_POCKET_KEY : config.live.pocketKey, pocketAccount });
+  const pairing = makePairing({ credential: pocketCredential, now, log: (kind, detail) => store.log(kind, null, detail) });
   let walletState = null;
   const svc = {
-    config, store, ol, oc, intake, engine, mock, pocketAccount, reserveAccount,
+    config, store, ol, oc, intake, engine, mock, pocketAccount, reserveAccount, auth, pairing,
     get walletState() { return walletState; },
     async start() { walletState = await engine.logWalletState(); store.log('service_start', null, { mode: config.mode, wallets: walletState }); return walletState; },
     // one pass: look for payments, then move money. Never throws.

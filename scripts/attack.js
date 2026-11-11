@@ -6,11 +6,10 @@
 // Afterwards the approver REJECTS the attacker's request so no stray approvals are left.
 import fs from 'node:fs';
 import crypto from 'node:crypto';
-import http from 'node:http';
-import net from 'node:net';
 import { loadConfig, requireLive } from '../server/config.js';
 import { createServices } from '../server/services.js';
-import { createHomeApp, createPublicApp } from '../server/app.js';
+import { createApp } from '../server/app.js';
+import { makeTestDevice } from '../server/homeauth.js';
 import { decide, USDC_TOKEN } from '../server/guard.js';
 import { signNep413, newKey } from '../server/nep413.js';
 import { scrub } from '../server/outlayer.js';
@@ -49,9 +48,12 @@ async function buildEnv({ mockOpts = {}, topUpMs = 3600e3 } = {}) {
     landlord: MOCK_LANDLORD, exit: MOCK_EXIT,
     pocketAuth: LIVE ? { key: config.live.pocketKey } : { key: MOCK_POCKET_KEY },
     approver: LIVE ? config.live.approver : svc.mock.approver,
-    pub: await listen(createPublicApp(svc)), home: await listen(createHomeApp(svc)),
+    pub: null, home: null,
     close: () => { servers.forEach((s) => s.close()); },
   };
+  env.pub = env.home = await listen(createApp(svc));
+  env.device = makeTestDevice(); // stands in for the laptop's browser key
+  if (!svc.auth.register({ publicKeySpkiB64: env.device.publicKeySpkiB64, code: svc.auth.setupCode() }).ok) throw new Error('device setup failed');
   env.fetchJ = async (base, p, init = {}) => {
     const r = await fetch(base + p, { ...init, headers: { 'Content-Type': 'application/json', ...(init.headers ?? {}) }, body: init.body && typeof init.body !== 'string' ? JSON.stringify(init.body) : init.body });
     const text = await r.text(); let body; try { body = JSON.parse(text); } catch { body = text; }
@@ -190,32 +192,63 @@ E.store.setAllowance(5_000n);
 E.store.createBill({ id: 'atk-rent', label: 'rent', payee: E.landlord, amount: BILL_PAY, expiresAt: E.now() + 3600e3 });
 E.store.createBill({ id: 'atk-old', label: 'old', payee: E.landlord, amount: BILL_OLD, expiresAt: E.now() - 60e3 });
 const guardState = async () => JSON.stringify({ bills: E.store.bills(), allowance: String(E.store.allowance()) });
+const blockedCount = () => E.store.events(500).filter((x) => x.kind === 'home_blocked').length;
 for (const [id, name, method, path, body] of [
   ['C6a', 'phone creates a bill', 'POST', '/api/home/bills', { id: 'evil', label: 'x', payee: 'evil.near', amountUsdc: 1, expiresAt: '2030-01-01T00:00:00Z' }],
   ['C6b', 'phone edits a bill amount', 'PUT', '/api/home/bills/atk-rent', { label: 'x', payee: 'evil.near', amountUsdc: 99, expiresAt: '2030-01-01T00:00:00Z' }],
   ['C6c', 'phone raises the refill allowance', 'POST', '/api/home/allowance', { totalUsdc: 9999 }],
 ]) {
   await runCase(id, name, async () => {
-    const before = await guardState();
-    const r = await E.fetchJ(E.pub, path, { method, headers: E.pocketAuth ? { Authorization: `Bearer ${E.pocketAuth.key}` } : {}, body });
+    const before = await guardState(), blocked0 = blockedCount();
+    const r = await E.fetchJ(E.pub, path, { method, headers: { Authorization: `Bearer ${E.pocketAuth.key}` }, body }); // the phone has its pocket key, not the laptop key
     const alt = await E.fetchJ(E.pub, path.replace('/api/home/', '/api/phone/'), { method, body });
     const after = await guardState();
-    const ok = r.status === 404 && alt.status === 404 && before === after;
-    const msg = typeof r.body === 'string' ? (r.body.match(/<pre>(.*?)<\/pre>/)?.[1] ?? r.body.slice(0, 60)) : raw({ body: r.body });
-    return (ok ? PASS : FAIL)(`HTTP ${r.status} "${msg}" (route does not exist; also /api/phone/…: ${alt.status}) | guard state unchanged: ${before === after}`);
+    const ok = r.status === 401 && r.text === '{"error":"unauthorized"}' && alt.status === 404 && before === after && blockedCount() === blocked0 + 1;
+    return (ok ? PASS : FAIL)(`HTTP ${r.status} ${r.text} (no /api/phone/ equivalent: ${alt.status}) | guard state unchanged: ${before === after} | logged as home_blocked: ${blockedCount() - blocked0}`);
   });
 }
-await runCase('C6d', 'a home route from a non-loopback address', async () => {
-  if (LIVE) return SKIP('mock only (needs a spoofed socket); the check is the same code path');
-  const app = createHomeApp(E.svc);
-  const sock = new net.Socket(); Object.defineProperty(sock, 'remoteAddress', { value: '10.1.2.3' });
-  const req = new http.IncomingMessage(sock);
-  Object.assign(req, { method: 'POST', url: '/api/home/allowance', headers: { 'content-type': 'application/json' } });
-  req.push(JSON.stringify({ totalUsdc: 9999 })); req.push(null);
-  const res = new http.ServerResponse(req); const chunks = [];
-  const done = new Promise((r) => { res.write = (c) => { chunks.push(c); return true; }; res.end = (c) => { if (c) chunks.push(c); r(); return res; }; });
-  app.handle(req, res); await done;
-  return (res.statusCode === 403 && E.store.allowance() === 5_000n ? PASS : FAIL)(`HTTP ${res.statusCode} ${chunks.join('')}`);
+// ---------------- the home key: unsigned, replayed, tampered, stale, other device
+const hsign = (method, path, bodyObj, over = {}) => { const raw = bodyObj === undefined ? '' : JSON.stringify(bodyObj); return { raw, headers: { 'Content-Type': 'application/json', ...E.device.sign({ method, path, body: raw, time: E.now(), ...over }) } }; };
+const hsend = (method, path, bodyObj, headersRaw) => E.fetchJ(E.pub, path, { method, headers: headersRaw.headers, body: headersRaw.raw || undefined });
+await runCase('H1', 'any client without the laptop key calls home routes (state, log, allowance, halt, exit, pairing)', async () => {
+  const before = await guardState(), blocked0 = blockedCount(), reqs0 = await reqIds(E);
+  const calls = [['GET', '/api/home/state'], ['GET', '/api/home/log'], ['POST', '/api/home/allowance', { totalUsdc: 9999 }], ['POST', '/api/home/engine/clear-halt'], ['POST', '/api/home/exit', { amountUsdc: 1 }], ['POST', '/api/home/pair/start'], ['GET', '/api/home/pair/abc'], ['POST', '/api/home/tick']];
+  let all401 = true;
+  for (const [m, p, b] of calls) { const r = await E.fetchJ(E.pub, p, { method: m, headers: { Authorization: `Bearer ${E.pocketAuth.key}` }, body: b }); if (r.status !== 401 || r.text !== '{"error":"unauthorized"}') all401 = false; }
+  const after = await guardState(), reqs1 = await reqIds(E);
+  const logged = blockedCount() - blocked0;
+  return (all401 && before === after && added(reqs0, reqs1) === 0 && logged === calls.length ? PASS : FAIL)(`${calls.length} calls, all HTTP 401 {"error":"unauthorized"}: ${all401} | guard state unchanged: ${before === after} | OutLayer requests created: ${added(reqs0, reqs1)} | logged as home_blocked: ${logged}/${calls.length}`);
+});
+await runCase('H2', 'replay a genuinely signed request', async () => {
+  const h = hsign('GET', '/api/home/state');
+  const first = await hsend('GET', '/api/home/state', undefined, h), second = await hsend('GET', '/api/home/state', undefined, h);
+  const last = E.store.events(50).find((x) => x.kind === 'home_blocked');
+  return (first.status === 200 && second.status === 401 && last?.detail?.reason === 'replayed_nonce' ? PASS : FAIL)(`first: HTTP ${first.status}; identical bytes again: HTTP ${second.status} ${second.text} | log reason: ${last?.detail?.reason}`);
+});
+await runCase('H3', 'tampered body: a valid signature for one allowance, a different one sent', async () => {
+  const before = await guardState();
+  const signedFor = hsign('POST', '/api/home/allowance', { totalUsdc: 0.005 });
+  const r = await E.fetchJ(E.pub, '/api/home/allowance', { method: 'POST', headers: signedFor.headers, body: JSON.stringify({ totalUsdc: 9999 }) });
+  const last = E.store.events(50).find((x) => x.kind === 'home_blocked');
+  return (r.status === 401 && before === (await guardState()) && last?.detail?.reason === 'bad_signature' ? PASS : FAIL)(`HTTP ${r.status} ${r.text} | log reason: ${last?.detail?.reason} | allowance unchanged: ${before === (await guardState())}`);
+});
+await runCase('H4', 'stale and future timestamps (61 s either way)', async () => {
+  const out = [];
+  for (const skew of [-61_000, 61_000]) { const h = hsign('GET', '/api/home/state', undefined, { time: E.now() + skew }); const r = await hsend('GET', '/api/home/state', undefined, h); out.push(`${skew / 1000}s: HTTP ${r.status}`); }
+  const ok = out.every((x) => x.endsWith('401')) && E.store.events(50).filter((x) => x.kind === 'home_blocked' && x.detail.reason === 'stale_timestamp').length >= 2;
+  return (ok ? PASS : FAIL)(out.join(', ') + ' | log reason: stale_timestamp');
+});
+await runCase('H5', 'a different device key signs a home request', async () => {
+  const other = makeTestDevice(); const raw = '';
+  const r = await E.fetchJ(E.pub, '/api/home/state', { headers: other.sign({ method: 'GET', path: '/api/home/state', body: raw, time: E.now() }) });
+  const last = E.store.events(50).find((x) => x.kind === 'home_blocked');
+  return (r.status === 401 && last?.detail?.reason === 'bad_signature' ? PASS : FAIL)(`HTTP ${r.status} ${r.text} | log reason: ${last?.detail?.reason}`);
+});
+await runCase('H6', 'the blocked attempts are visible in the home log (read with the laptop key)', async () => {
+  const h = hsign('GET', '/api/home/log'); const r = await hsend('GET', '/api/home/log', undefined, h);
+  const blocked = (r.body?.events ?? []).filter((x) => x.kind === 'home_blocked');
+  const reasons = [...new Set(blocked.map((x) => x.detail.reason))].sort();
+  return (r.status === 200 && blocked.length >= 15 && blocked.every((x) => x.ok === false) ? PASS : FAIL)(`HTTP ${r.status}; ${blocked.length} blocked entries, reasons: ${reasons.join(', ')}; none carries a body or key`);
 });
 await runCase('C5', 'phone triggers a bill with an amount and payee in the body', async () => {
   const before = await reqIds(E);

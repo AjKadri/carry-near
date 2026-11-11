@@ -19,10 +19,14 @@ export function openDb(file) {
   `);
   const getKv = db.prepare('SELECT value FROM kv WHERE key = ?');
   const setKv = db.prepare('INSERT INTO kv (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value');
+  const getStr = (key) => getKv.get(key)?.value ?? null;
   const insertEvent = db.prepare('INSERT INTO events (ts, kind, amount, ok, detail) VALUES (?, ?, ?, ?, ?)');
   const listEvents = db.prepare('SELECT id, ts, kind, amount, ok, detail FROM events ORDER BY id DESC LIMIT ?');
   return {
     raw: db,
+    getStr,
+    setStr: (key, v) => { setKv.run(key, String(v)); },
+    delKey: (key) => { db.prepare('DELETE FROM kv WHERE key = ?').run(key); },
     getInt: (key, dflt = 0) => { const r = getKv.get(key); return r ? Number(r.value) : dflt; },
     setInt: (key, n) => { setKv.run(key, String(n)); },
     log: (kind, amount = null, detail = {}, ok = true) =>

@@ -1,0 +1,38 @@
+/* ALL colours, fonts, sizes and motion for the whole app live in this one file.
+   PLACEHOLDERS ONLY: nothing here is a design decision. Values are browser/system keywords so the screens work
+   before the owner sends fonts and colours. Replace the values; do not add styles elsewhere with literal colours. */
+:root {
+  /* fonts */
+  --font-display: system-ui, sans-serif;
+  --font-body: system-ui, sans-serif;
+  --font-mono: ui-monospace, monospace;
+  --font-size-body: 16px;
+  --font-size-small: 13px;
+  --font-size-display: 32px;
+
+  /* colours (system keywords as neutral stand-ins) */
+  --color-bg: Canvas;
+  --color-surface: Canvas;
+  --color-text: CanvasText;
+  --color-muted: GrayText;
+  --color-border: GrayText;
+  --color-accent: LinkText;          /* the one primary-action colour */
+  --color-accent-text: Canvas;
+  --color-danger: Mark;              /* blocked / refused */
+  --color-danger-text: MarkText;
+  --color-notice: Highlight;         /* mode / halt banners */
+  --color-notice-text: HighlightText;
+  /* money tiles: five slots, same stand-in for now */
+  --tile-1: GrayText; --tile-2: GrayText; --tile-3: GrayText; --tile-4: GrayText; --tile-5: GrayText;
+
+  /* shape and spacing */
+  --radius: 4px;
+  --gap: 12px;
+  --gutter: 16px;
+  --max-width: 40rem;
+
+  /* motion (used only when the user has not asked for reduced motion) */
+  --motion-fast: 120ms;
+  --motion-slow: 400ms;
+  --motion-stagger: 70ms;
+}

@@ -1,8 +1,18 @@
-/* Neutral placeholder styling. Fonts, colours and motion are the owner's call and not chosen yet. */
-body { margin: 0; font-family: system-ui, sans-serif; background: #fff; color: #111; }
-main { max-width: 36rem; margin: 0 auto; padding: 16px; }
-nav a { margin-right: 12px; }
-.banner { background: #eee; padding: 8px 16px; font-size: 14px; }
+@import './tokens.css';
+body { margin: 0; font-family: var(--font-body); font-size: var(--font-size-body); background: var(--color-bg); color: var(--color-text); }
+h1 { font-family: var(--font-display); }
+main { max-width: var(--max-width); margin: 0 auto; padding: var(--gutter); }
+nav a { margin-right: var(--gap); color: var(--color-accent); }
+.banner { background: var(--color-notice); color: var(--color-notice-text); padding: 8px var(--gutter); font-size: var(--font-size-small); }
+.muted { color: var(--color-muted); font-size: var(--font-size-small); }
+.big { font-family: var(--font-display); font-size: var(--font-size-display); }
+code, pre { font-family: var(--font-mono); }
 table { width: 100%; border-collapse: collapse; }
-td, th { text-align: left; padding: 4px 8px 4px 0; border-bottom: 1px solid #ddd; }
-button { padding: 6px 12px; }
+td, th { text-align: left; padding: 4px 8px 4px 0; border-bottom: 1px solid var(--color-border); vertical-align: top; }
+tr.blocked { background: var(--color-danger); color: var(--color-danger-text); }
+button { padding: 6px 12px; border-radius: var(--radius); }
+button.primary { background: var(--color-accent); color: var(--color-accent-text); border: 0; }
+input { padding: 4px 6px; border-radius: var(--radius); max-width: 100%; }
+.panel { border: 1px solid var(--color-border); border-radius: var(--radius); padding: var(--gap); margin: var(--gap) 0; }
+.code { font-family: var(--font-mono); font-size: var(--font-size-display); letter-spacing: 0.15em; }
+@media (prefers-reduced-motion: no-preference) { button { transition: opacity var(--motion-fast); } }

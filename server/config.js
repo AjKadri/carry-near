@@ -10,12 +10,11 @@ export function loadConfig(overrides = {}) {
   return {
     mode,
     handle: env.CARRY_HANDLE || 'demo',
-    // HOME app (bills, allowance, reserve balance): loopback only, enforced again per request.
-    homePort: Number(env.PORT || 8787),
-    homeHost: env.HOST || '127.0.0.1',
-    // PUBLIC app (pay page, phone API). Still loopback by default; put a reverse proxy in front for a real deployment.
-    publicPort: Number(env.PUBLIC_PORT || 8788),
-    publicHost: env.PUBLIC_HOST || '127.0.0.1',
+    // One app: pay page, phone API and signed home routes. Loopback by default; a reverse proxy (Caddy) fronts it when deployed.
+    port: Number(env.PORT || 8787),
+    host: env.HOST || '127.0.0.1',
+    publicUrl: env.CARRY_PUBLIC_URL || null, // used in the pairing QR; falls back to the browser's own origin
+    exitAccount: env.CARRY_EXIT_ACCOUNT || 'nearhacka.near',
     dbPath: env.CARRY_DB || 'data/carry.db',
     tickMs: Number(env.CARRY_TICK_MS || 5000),
     topUpEveryMs: Number(env.CARRY_TOPUP_MS || 5 * 60e3),
