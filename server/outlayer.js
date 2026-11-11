@@ -30,7 +30,7 @@ export function makeOutLayer(transport, { approver, recipient = 'outlayer.near' 
     },
     async confBalance(auth) {
       const r = await transport(auth, 'GET', '/wallet/v1/confidential/balance');
-      if (r.status !== 200) throw new Error(`balance read failed: HTTP ${r.status} ${scrub(r.body).slice(0, 200)}`);
+      if (r.status !== 200) { const e = new Error(`balance read failed: HTTP ${r.status} ${scrub(r.body).slice(0, 200)}`); e.status = r.status; throw e; }
       return usdc(r.body.balances);
     },
     reserveTransfer: (to, amount, idem) => transport('reserve', 'POST', '/wallet/v1/confidential/transfer', { to, token: USDC_TOKEN, amount: String(amount) }, idem ? { 'Idempotency-Key': idem } : {}),

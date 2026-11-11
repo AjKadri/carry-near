@@ -71,7 +71,7 @@ test('phone API: key required, never stored; refusals returned raw; reserve neve
     assert.equal(log.includes(MOCK_POCKET_KEY), false);
     assert.ok(t.svc.store.events(100).some((e) => e.kind === 'phone_send_refused'));
     const wrongKey = await t.j(t.pub, '/api/phone/state', { headers: { Authorization: 'Bearer wk_notmine' } });
-    assert.ok(wrongKey.status >= 400);
+    assert.equal(wrongKey.status, 401);
   } finally { t.close(); }
 });
 
@@ -87,5 +87,25 @@ test('pay link: unknown handle 404, bad refund address 400, same payer+amount re
     const st = await t.j(t.pub, `/api/pay/demo/status?address=${a.body.address}`);
     assert.equal(st.body.status, 'PENDING_DEPOSIT');
     assert.equal((await t.j(t.pub, '/api/pay/demo/status?address=unknown')).status, 404);
+  } finally { t.close(); }
+});
+
+test('phone routes: a missing or wrong key gets 401 {"error":"unauthorized"} and nothing else', async () => {
+  const t = await boot({ allowance: 0 });
+  try {
+    const body = { to: MOCK_LANDLORD, amountUsdc: 1 };
+    const cases = [
+      ['GET', '/api/phone/state', undefined, undefined],
+      ['GET', '/api/phone/state', { Authorization: 'Bearer wk_wrong' }, undefined],
+      ['GET', '/api/phone/state', { Authorization: 'Basic abc' }, undefined],
+      ['POST', '/api/phone/send', undefined, body],
+      ['POST', '/api/phone/send', { Authorization: 'Bearer wk_wrong' }, body],
+    ];
+    for (const [method, path, headers, b] of cases) {
+      const r = await fetch(t.pub + path, { method, headers: { 'Content-Type': 'application/json', ...(headers ?? {}) }, body: b ? JSON.stringify(b) : undefined });
+      assert.equal(r.status, 401, `${method} ${path}`);
+      assert.equal(await r.text(), '{"error":"unauthorized"}', `${method} ${path} body must carry no detail`);
+    }
+    assert.equal(t.svc.mock.bal.pocket, 0n);
   } finally { t.close(); }
 });

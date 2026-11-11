@@ -95,17 +95,19 @@ export function createPublicApp(svc) {
   });
 
   // ---- phone: the pocket key arrives in the Authorization header and is never stored or logged
-  const needKey = (req, res) => { const k = bearer(req); if (!k) { res.status(401).json({ error: 'pocket key required' }); return null; } return { key: k }; };
+  const unauthorized = (res) => res.status(401).json({ error: 'unauthorized' }); // same body for a missing and a wrong key, no upstream detail
+  const needKey = (req, res) => { const k = bearer(req); if (!k) { unauthorized(res); return null; } return { key: k }; };
   app.get('/api/phone/state', async (req, res) => {
     const auth = needKey(req, res); if (!auth) return;
     try { res.json({ pocket: Number(await ol.confBalance(auth)), ceiling: Number(store.ceiling()), note: 'Protected by Carry' }); }
-    catch (err) { res.status(502).json({ error: 'upstream', message: scrub(err.message) }); }
+    catch (err) { if (err.status === 401 || err.status === 403) return unauthorized(res); res.status(502).json({ error: 'upstream' }); }
   });
   app.post('/api/phone/send', async (req, res) => {
     const auth = needKey(req, res); if (!auth) return;
     const to = req.body?.to, micro = usdcToMicro(req.body?.amountUsdc);
     if (typeof to !== 'string' || !to || micro === null) return res.status(400).json({ error: 'to and amountUsdc are required' });
     const r = await ol.transport(auth, 'POST', '/wallet/v1/confidential/withdraw', { to, token: USDC_TOKEN, amount: String(micro), chain: 'near' });
+    if (r.status === 401) return unauthorized(res);
     const ok = r.status === 200;
     store.log(ok ? 'phone_send' : 'phone_send_refused', micro, { to, http: r.status, raw: JSON.parse(scrub(r.body)) }, ok);
     res.status(r.status).json(r.body); // the raw refusal goes back to the phone, on purpose
