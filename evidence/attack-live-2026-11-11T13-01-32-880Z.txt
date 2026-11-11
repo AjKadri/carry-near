@@ -1,0 +1,11 @@
+# Carry attack run — LIVE (mainnet, locked wallets, tiny amounts) — 2026-11-11T12:55:04.338Z
+# wallets at start: reserve v2 locked=true frozen=false | pocket v4 locked=true frozen=false
+# start balances: reserve 449596, pocket 1230000
+PASS — B5 — refill while the engine is halted — engine halted: cycle created 0 requests and 0 refill rows for a new arrival (halt flag set in-process; the real trigger is shown in the mock run)
+WAITING_FOR_PAYMENT address=7wmpNEWbFmHxh2yuaDvwUzAW6vrhra1mk5xuiiqKFQ9t amount=0.05 USDC network=Solana valid_until=2026-11-17T12:55:07.208Z
+   (live spend counter: +0.05 USDC for B8: the owner's payment (stays in the system); total 0.05 of 0.25)
+   (live spend counter: +0.03 USDC for B8: the refill moved reserve -> pocket; total 0.08 of 0.25)
+PASS — B7 — two triggers for one arrival (live: concurrent ticks + duplicate polls right after the payment) — refill rows for the arrival: 1; OutLayer requests created since the payment address was issued: 1; duplicate arrival insert accepted: false
+PASS — B8 — watch while running: allowance 0.03, payment 0.05 arrives while the service runs (live) — payment received 49988; refills for the arrival: [{"amount":30000,"state":"success","request_id":"b4d1fe29-1ee7-4e07-a103-f58ce68f65ae"}]; pocket +30000; reserve 449596 -> 469584 (kept 19988); allowance 0
+
+# SUMMARY (live): 3 PASS, 0 FAIL, 0 SKIP, 0 INFO | live spend counter 0.08 USDC (cap 0.25)
