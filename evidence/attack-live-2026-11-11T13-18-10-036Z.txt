@@ -1,0 +1,6 @@
+# Carry attack run — LIVE (mainnet, locked wallets, tiny amounts) — 2026-11-11T13:17:57.888Z
+# wallets at start: reserve v2 locked=true frozen=false | pocket v4 locked=true frozen=false
+# start balances: reserve 469584, pocket 1260000
+PASS — D7 — service refuses to vote on an expired or stale approval (guard and voter, code APPROVAL_EXPIRED) — control (fresh): REFILL_OK; 6 min old: APPROVAL_EXPIRED (approval is 359s old (limit 300s)); 25 h later: APPROVAL_EXPIRED; voter at 6 min / 25 h: APPROVAL_EXPIRED / APPROVAL_EXPIRED | proof: request pending_approval, reserve 469584, pocket 1260000 -> reserve 469584, pocket 1260000 | cleanup: reject -> 200 rejected
+
+# SUMMARY (live): 1 PASS, 0 FAIL, 0 SKIP, 0 INFO | live spend counter 0 USDC (cap 0.25)
