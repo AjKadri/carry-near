@@ -1,5 +1,5 @@
 # /etc/caddy/Caddyfile on the VPS. Caddy gets and renews the HTTPS certificate by itself (the DNS A record must point here).
 carry.ajkadri.dev {
 	encode zstd gzip
-	reverse_proxy 127.0.0.1:8787
+	reverse_proxy 127.0.0.1:8797
 }

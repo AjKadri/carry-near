@@ -1,6 +1,6 @@
 # Deploying Carry to a VPS (Ubuntu + Caddy)
 
-Carry listens on 127.0.0.1:8787 only; Caddy terminates HTTPS and proxies to it. The pay page, the phone API and the signed home routes are all reachable through Caddy; every home route needs the laptop's signature, nothing else reaches them.
+Carry listens on 127.0.0.1:8797 only (8787 and 8788 are taken by other apps on the VPS); Caddy terminates HTTPS and proxies to it. The pay page, the phone API and the signed home routes are all reachable through Caddy; every home route needs the laptop's signature, nothing else reaches them.
 
 1. DNS: an A record for `carry.ajkadri.dev` pointing at the VPS.
 2. Server: Node 22.13+ (`node -v`), Caddy installed, a `carry` user (`sudo useradd --system --home /opt/carry --shell /usr/sbin/nologin carry`).
