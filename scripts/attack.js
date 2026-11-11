@@ -19,6 +19,7 @@ import { MOCK_POCKET_KEY, MOCK_LANDLORD, MOCK_EXIT } from '../server/mock.js';
 const args = process.argv.slice(2);
 const LIVE = args.includes('--live');
 if (LIVE && !args.includes('--yes')) { console.error('Live mode moves real (tiny) money. Re-run with: npm run attack -- --live --yes'); process.exit(2); }
+const ONLY = args.find((a) => a.startsWith('--only='))?.slice(7).split(',') ?? null; // e.g. --only=B5,B7,B8 (used to resume a live run without repeating cases)
 const SPEND_CAP = 250_000; // micro-USDC, everything counted (our moves + the owner's payment)
 const WAIT = LIVE ? 4000 : 150;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -103,6 +104,7 @@ function spikeCreds() { // SPIKE6's signer: a real full-access key on chain that
 }
 
 async function runCase(id, name, fn) {
+  if (ONLY && !ONLY.includes(id)) return { status: 'SKIPPED_BY_FLAG' };
   let r;
   try { r = await fn(); } catch (err) { r = FAIL(`threw: ${scrub(err.message)}`); }
   results.push({ id, ...r });
@@ -325,7 +327,10 @@ await runCase('D5', 'vote on an EXPIRED approval', async () => {
   const r = await castVote(E, { account: sc.account, pubkey: sc.pubkey, seed: sc.seed }, id); // ONE attempt
   if (r.status === 200) {
     finding = true;
-    return { status: 'FINDING', detail: `OutLayer ACCEPTED a vote on an approval that expired at ${d.expires_at}. ${d0}. Request: POST /wallet/v1/approve/${id} {signature, public_key, account_id (SPIKE6 signer), nonce}. Response: HTTP ${r.status} ${raw(r)}. Expired approvals can still be executed. Stopping; not retrying.` };
+    await sleep(3000); // one read (not a retry) of what happened to the request
+    let outcome = 'request status not read';
+    try { const k = fs.readFileSync('../carry-spike/.env', 'utf8').match(/^SPIKE6_KEY=(.*)$/m)?.[1]; if (k) { const q = await E.ol.transport({ key: k }, 'GET', `/wallet/v1/requests/${d.request_id ?? '98f62dd1-bac8-47f0-9e10-fa90f6e068f1'}`); outcome = `request after the vote: ${q.body?.status} ${JSON.stringify(q.body?.result ?? {})}`; } } catch { /* leave as is */ }
+    return { status: 'FINDING', detail: `OutLayer's vote endpoint ACCEPTED a vote on an approval that expired at ${d.expires_at}. ${d0}. Request: POST /wallet/v1/approve/${id} {signature, public_key, account_id (SPIKE6 signer), nonce}. Response: HTTP ${r.status} ${raw(r)}. ${outcome}. Stopping; not retrying.` };
   }
   return ([409, 410, 401, 403].includes(r.status) ? PASS : FAIL)(`${d0} | vote: HTTP ${r.status} ${raw(r)}`);
 });
@@ -383,7 +388,7 @@ if (!LIVE) {
     return (added(before, after) === 0 && created === 0 ? PASS : FAIL)(`engine halted: cycle created ${added(before, after)} requests and ${created} refill rows for a new arrival (halt flag set in-process; the real trigger is shown in the mock run)`);
   });
   // B7 + B8 together, last (needs the owner's payment)
-  const ceil = 'live'; void ceil;
+  if (!ONLY || ONLY.includes('B8') || ONLY.includes('B7')) {
   suppressTimer(E);
   E.store.setAllowance(30_000n);
   const loop = setInterval(() => E.svc.tick(), 3000); // the service is already running
@@ -409,6 +414,7 @@ if (!LIVE) {
       const ok = refills.length === 1 && refills[0].amount === 30_000 && refills[0].state === 'success' && s.pocket - pocketBefore === 30_000n && s.reserve === reserveBefore + received - 30_000n && s.allowance === 0n;
       return (ok ? PASS : FAIL)(`payment received ${received}; refills for the arrival: ${JSON.stringify(refills.map((r) => ({ amount: r.amount, state: r.state, request_id: r.request_id })))}; pocket +${s.pocket - pocketBefore}; reserve ${reserveBefore} -> ${s.reserve} (kept ${s.reserve - reserveBefore}); allowance ${s.allowance}`);
     });
+  }
   }
 }
 await runCase('F1', 'swap and unshield by the pocket key are allowed inside the caps (griefing, not theft)', async () => INFO('documented limit, not a pass: T7 in SPIKE.md. A thief cannot withdraw swapped or unshielded funds but can make them unrecoverable, bounded by the pocket caps.'));

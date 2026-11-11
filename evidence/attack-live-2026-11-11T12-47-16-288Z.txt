@@ -1,0 +1,44 @@
+# Carry attack run — LIVE (mainnet, locked wallets, tiny amounts) — 2026-11-11T12:45:20.618Z
+# wallets at start: reserve v2 locked=true frozen=false | pocket v4 locked=true frozen=false
+# start balances: reserve 479596, pocket 1220000
+PASS — A1 — phone sends 11 USDC (per-tx cap 10) — HTTP 403 {"error":"policy_denied","message":"Per-transaction limit exceeded for nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1: 11000000 > 10000000"}
+PASS — A2 — phone confidential transfer of 11 USDC — HTTP 403 {"error":"policy_denied","message":"Per-transaction limit exceeded for nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1: 11000000 > 10000000"}
+PASS — A3 — phone withdraws another token (wNEAR) — HTTP 403 {"error":"policy_denied","message":"Token 'nep141:wrap.near' is not allowed by policy"}
+PASS — A4 — phone tries call, native transfer, public withdraw, intents transfer — call: HTTP 403 {"error":"policy_denied","message":"Transaction type 'call' is not allowed by policy"} | transfer: HTTP 403 {"error":"policy_denied","message":"Transaction type 'transfer' is not allowed by policy"} | withdraw: HTTP 403 {"error":"policy_denied","message":"Transaction type 'withdraw' is not allowed by policy"} | intents_transfer: HTTP 403 {"error":"policy_denied","message":"Transaction type 'intents_transfer' is not allowed by 
+INFO — A5 — phone hits the daily cap (20 USDC) — not re-run live (needs 20 USDC). T7b showed a USDC daily cap refusing live: "Daily limit exceeded … 300000 + 20000 > 300000" (SPIKE.md)
+PASS — A6 — phone mints a sub-key: it must be an empty, separate wallet — mint HTTP 200; sub-key account 50e5e03021… ≠ pocket 96cb4ed480…; sub confidential balance 0; pocket balance unchanged 1220000
+PASS — A7 — phone tries to read "the reserve" with the pocket key — pocket key sees its own account 96cb4ed480… and balance 1220000; the reserve (479596) is not reachable with it
+PASS — A8 — phone routes with a missing or wrong key — 401 {"error":"unauthorized"} (×4 identical)
+SKIP — A9 — phone sends while the pocket is frozen — not repeated live (shown in T7: 403 wallet_frozen); mock only
+PASS — C6a — phone creates a bill — HTTP 404 "Cannot POST /api/home/bills" (route does not exist; also /api/phone/…: 404) | guard state unchanged: true
+PASS — C6b — phone edits a bill amount — HTTP 404 "Cannot PUT /api/home/bills/atk-rent" (route does not exist; also /api/phone/…: 404) | guard state unchanged: true
+PASS — C6c — phone raises the refill allowance — HTTP 404 "Cannot POST /api/home/allowance" (route does not exist; also /api/phone/…: 404) | guard state unchanged: true
+SKIP — C6d — a home route from a non-loopback address — mock only (needs a spoofed socket); the check is the same code path
+PASS — C5 — phone triggers a bill with an amount and payee in the body — HTTP 400 {"error":"a bill is paid by id only; amount and payee come from the stored bill"} | requests created: 0
+PASS — B1 — refill above the ceiling — guard: OVER_CEILING (pocket 1220000 + in flight 0 + refill 50000 > phone ceiling 1250000) | proof: request pending_approval, reserve 479596, pocket 1220000 -> reserve 479596, pocket 1220000 | cleanup: approver reject -> 200 rejected
+PASS — B2 — refill above the allowance — guard: OVER_ALLOWANCE (refill 20000 > remaining total-refill allowance 10000) | proof: request pending_approval, reserve 479596, pocket 1220000 -> reserve 479596, pocket 1220000 | cleanup: approver reject -> 200 rejected
+PASS — B3a — transfer to a whitelisted non-pocket address (landlord) — guard: REFILL_NOT_POCKET (transfer to d7041ab1063b3f017ae4d43857b225c2897b0d39682cbd2048c539a04b4805a4 is not the pocket) | proof: request pending_approval, reserve 479596, pocket 1220000 -> reserve 479596, pocket 1220000 | cleanup: approver reject -> 200 rejected
+PASS — B3b — transfer to a whitelisted non-pocket address (owner exit) — guard: REFILL_NOT_POCKET (transfer to nearhacka.near is not the pocket) | proof: request pending_approval, reserve 479596, pocket 1220000 -> reserve 479596, pocket 1220000 | cleanup: approver reject -> 200 rejected
+PASS — B4 — transfer and withdraw to a non-whitelisted address — transfer: HTTP 403 {"error":"policy_denied","message":"Address 'ec6f684e18e6aa84863b3eb23821a1a243b087c95bb5917c12d838c36950172c' | withdraw: HTTP 403 | requests created: 0
+PASS — C1 — bill with amount +1 micro-USDC — guard: BILL_AMOUNT_MISMATCH (amount 20001 differs from the stored bill amount) | proof: request pending_approval, reserve 479596, pocket 1220000 -> reserve 479596, pocket 1220000 | cleanup: approver reject -> 200 rejected
+PASS — C2 — bill to an altered payee — guard: BILL_UNKNOWN_PAYEE (no stored bill for payee nearhacka.near) | proof: request pending_approval, reserve 479596, pocket 1220000 -> reserve 479596, pocket 1220000 | cleanup: approver reject -> 200 rejected
+PASS — C3 — bill after its expiry — guard: BILL_EXPIRED (the stored bill has expired) | proof: request pending_approval, reserve 479596, pocket 1220000 -> reserve 479596, pocket 1220000 | cleanup: approver reject -> 200 rejected
+PASS — D1 — vote by a fresh key claiming the approver account — HTTP 401 {"error":"invalid_signature","message":"public key ed25519:CPj5TidSuZSam5e4kJfriBcwuPmvoDRCuDKARh7fzTC4 is not a key of d92a02dc32ad509de6ffee4685e8098341b20ae71b4d877fe8c3f74995f1af44: a vote is signed with a full-access key of the account it names"} | B still pending_approval
+PASS — D2 — vote by a real full-access key of a non-approver account — HTTP 403 {"error":"not_approver","message":"2124a543674f54198ca7349b8d6bad042c48ecb71c9143dba387d4758e3550f7 is not an approver of this wallet's policy"} | B still pending_approval
+   (live spend counter: +0.01 USDC for D3: approval A legitimately executes (reserve -> pocket); total 0.01 of 0.25)
+PASS — D3 — replay a valid vote for approval A onto approval B — replay on B: HTTP 401 {"error":"invalid_signature","message":"NEP-413 signature verification failed"}; B pending_approval | legit vote on A: HTTP 200, A success, pocket +10000
+PASS — D4 — second vote on an already-approved approval — HTTP 409 {"error":"conflict","message":"this approval is already approved; it takes no more votes"}
+PASS — D6 — leaked reserve key alone: a pocket refill with no approver vote — B (requested earlier) still pending_approval after waiting; reserve 469596, pocket 1230000 -> reserve 469596, pocket 1230000 | cleanup: reject -> 200 rejected
+   (live spend counter: +0.02 USDC for C7/C4: the single legitimate bill payment to our own landlord wallet; total 0.03 of 0.25)
+PASS — C7 — two simultaneous phone triggers of the same bill: exactly one payment request — responses 200/422; refused one: {"ok":false,"code":"BILL_USED"} | payment requests created: 1 | bill used once: true | reserve 469596 -> 449596
+PASS — C4 — second use of the bill, later — HTTP 422 {"ok":false,"code":"BILL_USED"} | reserve 449596 -> 449596; requests created 0
+FINDING — D5 — vote on an EXPIRED approval — OutLayer ACCEPTED a vote on an approval that expired at 2026-11-10T22:26:38.191758+00:00. detail: HTTP 200 status=pending expires_at=2026-11-10T22:26:38.191758+00:00. Request: POST /wallet/v1/approve/ae63e6f3-814c-43ff-a8de-aa4eb18b9a7a {signature, public_key, account_id (SPIKE6 signer), nonce}. Response: HTTP 200 {"approval_id":"ae63e6f3-814c-43ff-a8de-aa4eb18b9a7a","status":"approved","approved":1,"required":1,"request_id":"98f62dd1-bac8-47f0-9e10-fa90f6e068f1"}. Expired approvals can still be executed. Stopping; not retrying.
+STOP: finding recorded above. No further live cases will run.
+
+# SUMMARY (live): 26 PASS, 0 FAIL, 2 SKIP, 1 INFO, 1 FINDING | live spend counter 0.03 USDC (cap 0.25)
+
+# ADDENDUM 2026-11-11T12:47:45Z (added by hand after reading the request once, no retry)
+# The FINDING line above ends "Expired approvals can still be executed". That sentence overstated it and is superseded:
+# the SPIKE6 request 98f62dd1-bac8-47f0-9e10-fa90f6e068f1 shows status "failed", result {"error":"Approval expired before execution"}, updated 2026-11-11T12:47:17Z.
+# What was observed: the VOTE endpoint accepted a vote on an expired approval (HTTP 200, approval status -> "approved"); the EXECUTOR refused to run it. Nothing moved.
+# The run stopped at D5 as agreed; B5, B7 and B8 did not run live. The live cases before D5 all passed (26 PASS, 0 FAIL).
