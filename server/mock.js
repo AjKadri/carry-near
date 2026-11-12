@@ -12,12 +12,12 @@ export const MOCK_LANDLORD = 'd7041ab1063b3f017ae4d43857b225c2897b0d39682cbd2048
 export const MOCK_EXIT = 'nearhacka.near';
 export const MOCK_POCKET_KEY = 'mock-pocket-key';
 
-export function createMock({ now = Date.now, settleDelayMs = 1500, tweakApproval = (a) => a } = {}) {
+export function createMock({ now = Date.now, settleDelayMs = 1500, tweakApproval = (a) => a, phoneTxLimit = 10_000_000n } = {}) {
   const approver = newKey();
   const wallet_pubkey = 'ed25519:' + b58enc(crypto.randomBytes(32));
   const bal = { reserve: 0n, pocket: 0n };
   const usage = { reserve: 0n, pocket: 0n };
-  const limits = { reserve: { tx: 20_000_000n, day: 60_000_000n }, pocket: { tx: 10_000_000n, day: 20_000_000n } };
+  const limits = { reserve: { tx: 20_000_000n, day: 60_000_000n }, pocket: { tx: BigInt(phoneTxLimit), day: 20_000_000n } };
   const whitelist = { reserve: new Set([MOCK_POCKET_ACCOUNT, MOCK_LANDLORD, MOCK_EXIT]), pocket: null };
   const reqs = new Map(), approvals = new Map(), idem = new Map();
   const m = { approver, state: { frozen: false, frozenReserve: false }, bal, reqs, approvals };

@@ -149,7 +149,7 @@ function PairPanel() {
     <div className="stack">
       <h2>Pair a phone</h2>
       {!s && <p><button className="action" onClick={start}>Pair phone</button></p>}
-      {s && view?.state === 'waiting' && <><p>Scan this with the phone camera. The phone gets only its pocket credential.</p><canvas ref={canvas} className="qr" /><p><button className="ghost" onClick={cancel}>Cancel</button></p></>}
+      {s && view?.state === 'waiting' && <><p>Scan this with the phone camera. The phone gets only its pocket credential.</p><canvas ref={canvas} className="qr" /><p className="muted">No camera? Open this link in a private window instead: <a className="mono wrap" href={`${mode?.body?.publicUrl || window.location.origin}/pair/${s.id}#${s.secret}`} target="_blank" rel="noreferrer">pairing link</a></p><p><button className="ghost" onClick={cancel}>Cancel</button></p></>}
       {s && view?.state === 'claimed' && <><p>The phone is connected. Does it show this code?</p><p className="code mono">{view.code}</p><p><button className="action" onClick={confirm}>Yes, same code: pair it</button> <button className="ghost" onClick={cancel}>No, cancel</button></p></>}
       {s && view?.state === 'confirmed' && <p>Paired. The phone now holds its pocket credential. <button className="ghost" onClick={() => { setS(null); setView(null); }}>Done</button></p>}
       {s && view?.state === 'expired' && <p>This pairing link expired. <button className="ghost" onClick={() => { setS(null); setView(null); }}>Start again</button></p>}

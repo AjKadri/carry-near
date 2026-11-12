@@ -5,7 +5,7 @@ import { plain, usePoll } from './api.js';
 import { Split, Tiles, BillTile, Refusal, usdc } from './parts.jsx';
 import { SLOTS, usePocketMotion, useFlipIds } from './motion.js';
 
-export function PhoneView({ status, pocket, ceiling, note, bills, flipIds, split, tiles, res, to, setTo, amt, setAmt, sending, onSend, onPay }) {
+export function PhoneView({ status, pocket, ceiling, sendLimit, note, bills, flipIds, split, tiles, res, to, setTo, amt, setAmt, sending, onSend, onPay }) {
   return (
     <>
       <section className="room emerald">
@@ -14,7 +14,7 @@ export function PhoneView({ status, pocket, ceiling, note, bills, flipIds, split
           {status === 'ok' && <>
             <p className="amount mono" data-pocket-amount>{usdc(pocket)}<span className="unit"> USDC</span></p>
             <Tiles filled={tiles.filled} from={tiles.from} slots={SLOTS} play={tiles.play} />
-            <p className="muted">Limit on this phone: <span className="mono">{usdc(ceiling)}</span> USDC · {note}</p>
+            <p className="muted limits"><span>Holds up to <span className="mono">{usdc(ceiling)}</span> USDC</span><span>Sends up to <span className="mono">{usdc(sendLimit)}</span> at a time</span><span>{note}</span></p>
           </>}
           {status === 'loading' && <p>Loading…</p>}
           {status === 'unreadable' && <p>Cannot read the pocket. Pair this phone again from the laptop.</p>}
@@ -72,5 +72,5 @@ export function Phone() {
   const send = async () => { setSending(true); setRes(null); const r = await plain('/api/phone/send', { method: 'POST', headers, body: { to, amountUsdc: Number(amt) } }); setRes({ ...r, amount: Number(amt).toFixed(2), play: ++seq.current }); setSending(false); reload(); };
   const payBill = async (id) => { const r = await plain(`/api/phone/bills/${id}/pay`, { method: 'POST', body: {} }); setRes({ ...r, amount: null, play: ++seq.current }); reloadBills(); reload(); };
   const status = s?.status === 200 ? 'ok' : s ? 'unreadable' : 'loading';
-  return <PhoneView status={status} pocket={s?.body?.pocket} ceiling={s?.body?.ceiling} note={s?.body?.note} bills={bills?.body?.bills} flipIds={flipIds} split={split} tiles={tiles} res={res} to={to} setTo={setTo} amt={amt} setAmt={setAmt} sending={sending} onSend={send} onPay={payBill} />;
+  return <PhoneView status={status} pocket={s?.body?.pocket} ceiling={s?.body?.ceiling} sendLimit={s?.body?.sendLimit} note={s?.body?.note} bills={bills?.body?.bills} flipIds={flipIds} split={split} tiles={tiles} res={res} to={to} setTo={setTo} amt={amt} setAmt={setAmt} sending={sending} onSend={send} onPay={payBill} />;
 }

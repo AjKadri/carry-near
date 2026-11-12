@@ -12,10 +12,10 @@ export function createServices(config = loadConfig(), { now = Date.now, mockOpts
   const store = openStore(config.dbPath);
   let transport, oc, approver, pocketAccount, reserveAccount, mock = null;
   if (config.mode === 'mock') {
-    mock = createMock({ now, ...mockOpts });
+    mock = createMock({ now, phoneTxLimit: config.phone.perTx, ...mockOpts });
     ({ transport, oneClick: oc, approver } = mock);
     pocketAccount = MOCK_POCKET_ACCOUNT; reserveAccount = MOCK_RESERVE_ACCOUNT;
-    if (store.getInt('allowance_remaining', -1) < 0) store.setAllowance(40_000_000n); // mock demo only; live starts at 0
+    if (store.getInt('allowance_remaining', -1) < 0) store.setAllowance(config.demoAllowance); // mock demo only; live starts at 0
   } else {
     requireLive(config);
     const l = config.live;
@@ -24,6 +24,7 @@ export function createServices(config = loadConfig(), { now = Date.now, mockOpts
     approver = l.approver; pocketAccount = l.pocketAccount; reserveAccount = l.reserveAccount;
     if (store.getInt('allowance_remaining', -1) < 0) store.setAllowance(0n);
   }
+  store.initCeiling(config.phone.ceiling);
   const ol = makeOutLayer(transport, { approver });
   const intake = makeIntake({ store, oc, reserveAccount, handle: config.handle, now });
   const engine = makeEngine({ store, ol, pocketAccount, now, topUpEveryMs: config.topUpEveryMs, settleOpts });

@@ -51,7 +51,7 @@ export function createApp(svc) {
   const needKey = (req, res) => { const k = bearer(req); if (!k) { unauthorized(res); return null; } return { key: k }; };
   app.get('/api/phone/state', async (req, res) => {
     const a = needKey(req, res); if (!a) return;
-    try { res.json({ pocket: Number(await ol.confBalance(a)), ceiling: Number(store.ceiling()), note: 'Protected by Carry' }); }
+    try { res.json({ pocket: Number(await ol.confBalance(a)), ceiling: Number(store.ceiling()), sendLimit: Number(config.phone.perTx), note: 'Protected by Carry' }); }
     catch (err) { if (err.status === 401 || err.status === 403) return unauthorized(res); res.status(502).json({ error: 'upstream' }); }
   });
   app.post('/api/phone/send', async (req, res) => {

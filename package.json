@@ -5,8 +5,12 @@
   "license": "Apache-2.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22.13" },
-  "workspaces": ["web"],
+  "engines": {
+    "node": ">=22.13"
+  },
+  "workspaces": [
+    "web"
+  ],
   "scripts": {
     "demo": "node scripts/demo.js",
     "start": "node server/index.js",
@@ -14,9 +18,13 @@
     "build": "npm run build -w web",
     "test": "node --test test/*.test.js",
     "attack": "node scripts/attack.js",
-    "reset-home-key": "node scripts/reset-home-key.js"
+    "reset-home-key": "node scripts/reset-home-key.js",
+    "contrast": "node scripts/contrast.js"
   },
   "dependencies": {
     "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
   }
 }

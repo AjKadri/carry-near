@@ -28,6 +28,7 @@ export function openStore(file) {
     // --- settings the guard depends on
     allowance: () => BigInt(base.getInt('allowance_remaining', 0)),
     setAllowance: (n) => base.setInt('allowance_remaining', Number(n)),
+    initCeiling: (n) => { if (base.getInt('phone_ceiling', -1) < 0) base.setInt('phone_ceiling', Number(n)); },
     ceiling: () => BigInt(base.getInt('phone_ceiling', 20_000_000)),
     // --- bills
     createBill: (b) => q('INSERT INTO bills (id,label,payee,amount,expires_at) VALUES (?,?,?,?,?)').run(b.id, b.label, b.payee, b.amount, b.expiresAt),

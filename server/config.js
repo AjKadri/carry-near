@@ -18,6 +18,14 @@ export function loadConfig(overrides = {}) {
     dbPath: env.CARRY_DB || 'data/carry.db',
     tickMs: Number(env.CARRY_TICK_MS || 5000),
     topUpEveryMs: Number(env.CARRY_TOPUP_MS || 5 * 60e3),
+    // Mock/demo only (never read in live mode, which always starts at 0): the refill allowance a fresh demo database starts with.
+    // 3 USDC means the first 5 USDC payment visibly splits: 3 to the pocket, 2 stays Protected.
+    demoAllowance: BigInt(Math.round(Number(env.CARRY_DEMO_ALLOWANCE_USDC ?? 3) * 1e6)),
+    // The pocket's two limits, shown on the phone. Mirror the locked pocket policy (live: enforced by OutLayer, not by these numbers).
+    phone: {
+      ceiling: BigInt(Math.round(Number(env.CARRY_PHONE_CEILING_USDC ?? 20) * 1e6)), // what the pocket holds at most (refill ceiling)
+      perTx: BigInt(Math.round(Number(env.CARRY_PHONE_TX_USDC ?? 10) * 1e6)),         // what the phone may send in one transaction
+    },
     live: {
       base: env.OUTLAYER_BASE || 'https://api.outlayer.ai',
       reserveKey: env.RESERVE_KEY, pocketKey: env.POCKET_KEY,
