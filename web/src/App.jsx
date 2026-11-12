@@ -2,10 +2,11 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import { loadKey, createKey, clearKey, publicKeySpkiB64, signedFetch } from './homeKey.js';
 import { plain, usePoll } from './api.js';
-import { Split, Tiles, BillTile, usdc } from './parts.jsx';
+import { Split, Tiles, BillTile, Refusal, usdc } from './parts.jsx';
 import { SLOTS, usePocketMotion, useFlipIds } from './motion.js';
 import { Phone } from './phone.jsx';
 
+const Msg = ({ msg, where }) => msg?.where !== where ? null : msg.ok ? <p className="mono wrap" role="status">{msg.text}</p> : <Refusal status={msg.status} body={msg.body} play={msg.status} subject="the reserve" />;
 const Refused = ({ head = 'Refused', children }) => <div className="refusal-slab" role="alert"><b className="refusal-head">{head}</b>{children}</div>;
 
 // ---------------------------------------------------------------- Pay page (public). Room: cobalt.
@@ -174,10 +175,14 @@ function HomeApp({ onUnrecognised }) {
   const [allow, setAllow] = useState('40');
   const [bill, setBill] = useState({ id: 'rent', label: 'Rent', payee: '', amountUsdc: '15', expiresAt: '' });
   const [exitAmt, setExitAmt] = useState('1');
-  const [msg, setMsg] = useState('');
+  const [msg, setMsg] = useState(null);
   useEffect(() => { if (s?.status === 401) onUnrecognised(); }, [s?.status]); // eslint-disable-line react-hooks/exhaustive-deps
   const st = s?.body;
-  const act = async (p, init) => { const r = await signedFetch(p, init); setMsg(r.status === 200 ? (r.body?.note ?? 'done') : JSON.stringify(r.body)); reloadS(); reloadLog(); };
+  const act = async (p, init, describe) => {
+    const r = await signedFetch(p, init);
+    setMsg(r.status === 200 ? { where: p, ok: true, text: describe ? describe(r.body) : 'Saved.' } : { where: p, ok: false, status: r.status, body: r.body });
+    reloadS(); reloadLog();
+  };
   const events = log?.body?.events ?? [];
   const day = paydayFrom(events);
   const [, tiles] = usePocketMotion(st?.reserve !== undefined ? st.pocket : null, st?.ceiling);
@@ -197,7 +202,7 @@ function HomeApp({ onUnrecognised }) {
         <div className="inner">
           <p className="label">Home</p>
           <h1>Reserve</h1>
-          {st?.halted && <Refused head={st.halted.code}><p>Refills are halted until reviewed. <button className="ghost" onClick={() => act('/api/home/engine/clear-halt', { method: 'POST' })}>Clear</button></p></Refused>}
+          {st?.halted && <Refused head={st.halted.code}><p>Refills are halted until reviewed. <button className="ghost" onClick={() => act('/api/home/engine/clear-halt', { method: 'POST' }, () => 'Halt cleared. Refills resume on the next cycle.')}>Clear</button></p></Refused>}
           {st?.reserve !== undefined && <p className="amount mono">{usdc(st.reserve)}<span className="unit"> USDC</span></p>}
           <p className="muted">Hidden from the phone, always.</p>
           {st?.wallets && <p className="muted mono small">Wallets at start: {st.wallets}</p>}
@@ -226,8 +231,9 @@ function HomeApp({ onUnrecognised }) {
             </>}
             <div className="form inline">
               <label>Authorise total refills (USDC)<input className="mono" value={allow} onChange={(e) => setAllow(e.target.value)} /></label>
-              <button className="action" onClick={() => act('/api/home/allowance', { method: 'POST', body: { totalUsdc: Number(allow) } })}>Set</button>
+              <button className="action" onClick={() => act('/api/home/allowance', { method: 'POST', body: { totalUsdc: Number(allow) } }, (b) => `Phone allowance set to ${usdc(b.allowance)} USDC.`)}>Set</button>
             </div>
+            <Msg msg={msg} where="/api/home/allowance" />
           </div>
           <PairPanel />
         </div>
@@ -242,8 +248,9 @@ function HomeApp({ onUnrecognised }) {
               <label>Payee account<input className="mono" value={bill.payee} onChange={(e) => setBill({ ...bill, payee: e.target.value })} placeholder="payee account" /></label>
               <label>Amount (USDC)<input className="mono" value={bill.amountUsdc} onChange={(e) => setBill({ ...bill, amountUsdc: e.target.value })} /></label>
               <label>Expires (ISO date)<input className="mono" value={bill.expiresAt} onChange={(e) => setBill({ ...bill, expiresAt: e.target.value })} placeholder="2030-01-01T00:00:00Z" /></label>
-              <button className="action" onClick={() => act('/api/home/bills', { method: 'POST', body: { ...bill, label: bill.label || bill.id, amountUsdc: Number(bill.amountUsdc), expiresAt: new Date(bill.expiresAt).toISOString() } })}>Save bill</button>
+              <button className="action" onClick={() => act('/api/home/bills', { method: 'POST', body: { ...bill, label: bill.label || bill.id, amountUsdc: Number(bill.amountUsdc), expiresAt: new Date(bill.expiresAt).toISOString() } }, () => 'Bill saved.')}>Save bill</button>
             </div>
+            <Msg msg={msg} where="/api/home/bills" />
           </div>
           <div className="stack">
             <h2>Bills</h2>
@@ -258,11 +265,11 @@ function HomeApp({ onUnrecognised }) {
           <h2>Withdraw to your exit account</h2>
           <div className="form inline">
             <label>Amount (USDC)<input className="mono" value={exitAmt} onChange={(e) => setExitAmt(e.target.value)} /></label>
-            <button className="action" onClick={() => act('/api/home/exit', { method: 'POST', body: { amountUsdc: Number(exitAmt) } })}>Request withdrawal</button>
+            <button className="action" onClick={() => act('/api/home/exit', { method: 'POST', body: { amountUsdc: Number(exitAmt) } }, (b) => `Withdrawal requested for ${Number(exitAmt).toFixed(2)} USDC: approve it in your OutLayer dashboard (request ${String(b.requestId ?? '').slice(0, 8)}, status ${b.status}).`)}>Request withdrawal</button>
           </div>
           <p>To <code className="mono">{st?.exitAccount}</code></p>
           <p className="muted">Carry's approver never approves this. You approve it in your OutLayer dashboard.</p>
-          {msg && <p className="mono wrap">{msg}</p>}
+          <Msg msg={msg} where="/api/home/exit" />
         </div>
       </section>
 

@@ -13,9 +13,8 @@ export function Split({ audience, incoming, pocketShare, protectedAmount, play =
   const showAmounts = !phone;
   return (
     <div className={`split${play ? ' play' : ''}`} key={play} data-audience={phone ? 'phone' : 'home'} style={{ '--at': `${share * 100}%`, '--share': share, '--rest': 1 - share }}>
-      <div className="split-stem">
-        <span className="split-in">Incoming{showAmounts && incoming != null ? <b className="mono"> {usdc(incoming)}</b> : null}</span>
-      </div>
+      <span className="split-in">Incoming{showAmounts && incoming != null ? <b className="mono"> {usdc(incoming)}</b> : null}</span>
+      <div className="split-stem" />
       <div className="split-fork">
         <div className="split-pocket" data-pocket>
           <span className="split-name">Pocket</span>
@@ -71,12 +70,39 @@ export function BillTile({ bill, flip = false, onPay, canPay = true }) {
 // ------------------------------------------------------------------------------------------------ Refusal
 // The amount goes out and comes back; the raw refusal reason is shown, unedited, in a red slab.
 // Red appears nowhere except here and on blocked log rows.
-export function Refusal({ amount, status, body, play = 0 }) {
+// One plain sentence for a non-technical viewer. Derived ONLY from the actual refusal: its error code and the numbers in
+// its message. Only the reasons we really get are mapped; anything else gets the generic line. The raw JSON stays below.
+export function explainRefusal(status, body, subject = 'this phone') {
+  const generic = 'Blocked by your protection rules.';
+  const e = body && typeof body.error === 'object' && body.error ? body.error : body ?? {};
+  if (e.raw && typeof e.raw === 'object') return explainRefusal(status, e.raw, subject);
+  const code = String(typeof e.error === 'string' ? e.error : e.code ?? '');
+  const msg = String(e.message ?? e.reason ?? '');
+  const money = (micro) => `${usdc(micro)} USDC`;
+  if (status === 401 || code === 'unauthorized') return 'Blocked: this device is not recognised, so it is not allowed to do this.';
+  if (code === 'BILL_USED') return 'Blocked: this bill has already been paid.';
+  if (code === 'policy_denied' || msg) {
+    let m;
+    if (/per-transaction limit exceeded/i.test(msg)) {
+      m = msg.match(/:\s*(\d+)\s*>\s*(\d+)\s*$/);
+      return m ? `Blocked: ${subject} can send at most ${money(m[2])} at a time.` : `Blocked: this is more than the most ${subject} can send at a time.`;
+    }
+    if (/daily limit exceeded/i.test(msg)) {
+      m = msg.match(/:\s*(\d+)\s*\+\s*(\d+)\s*>\s*(\d+)\s*$/);
+      return m ? `Blocked: this would take today's total past the ${money(m[3])} daily limit.` : "Blocked: this would take today's total past the daily limit.";
+    }
+    if (/not in whitelist|is not allowed.*recipient|recipient.*not allowed/i.test(msg)) return 'Blocked: that recipient is not on the approved list.';
+  }
+  return generic;
+}
+
+export function Refusal({ amount, status, body, play = 0, subject }) {
   return (
     <div className="refusal" role="alert" key={play}>
       {amount != null && <div className="bounce-track"><span className="bounce-amount mono">{amount} USDC</span></div>}
       <div className="refusal-slab">
         <b className="refusal-head">Refused · HTTP {status}</b>
+        <p className="refusal-plain">{explainRefusal(status, body, subject)}</p>
         <pre className="mono refusal-raw">{JSON.stringify(body, null, 2)}</pre>
       </div>
     </div>

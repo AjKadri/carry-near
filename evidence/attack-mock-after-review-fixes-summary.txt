@@ -1,0 +1,10 @@
+Thu Nov 12 22:14:01 WAT 2026
+PASS — B5 — refill while the engine is halted (GUARD_SHAPE_CHANGED from a changed approval shape) — halted=GUARD_SHAPE_CHANGED; event code UNEXPECTED_FIELD; second payment created 0 new requests; votes cast 0; pocket 0
+PASS — B6 — refill while the RESERVE is frozen — refill refused: HTTP 403 {"error":"wallet_frozen","message":"Wallet is frozen by controller"} | allowance untouched 40000000
+PASS — B7 — two triggers for one arrival (concurrent ticks, duplicate polls, duplicate arrival insert) — refill rows for the arrival: 1 (success); OutLayer requests created: 1; duplicate arrival insert accepted: false
+PASS — B8 — watch while running: allowance 0.03, payment 0.05 arrives later — refills for the arrival: [{"amount":30000,"state":"success"}]; pocket +30000; reserve 30000000 -> 30019990 (kept 19990); allowance 0
+INFO — F1 — swap and unshield by the pocket key are allowed inside the caps (griefing, not theft) — documented limit, not a pass: T7 in SPIKE.md. A thief cannot withdraw swapped or unshielded funds but can make them unrecoverable, bounded by the pocket caps.
+
+# SUMMARY (mock): 38 PASS, 0 FAIL, 2 SKIP, 1 INFO
+# MOCK run: this proves the code paths and refusal logic, not mainnet. Run `npm run attack -- --live --yes` for mainnet.
+Thu Nov 12 22:14:09 WAT 2026

@@ -23,6 +23,7 @@ code, pre { font-family: var(--font-mono); font-size: var(--size-mono); }
 .muted { color: var(--muted); font-size: var(--size-small); }
 
 /* ---------- type */
+h1, h2, .mark, .status b, .split-name, .bill-paid, .amount-mid { word-spacing: var(--word-spacing-display); }
 h1, h2 { font-family: var(--font-display); font-weight: var(--weight-display); text-transform: uppercase; letter-spacing: var(--tracking-display); line-height: var(--leading-display); margin: 0 0 var(--gap); }
 h1 { font-size: var(--size-title); }
 h2 { font-size: var(--size-section); }
@@ -101,6 +102,7 @@ button:disabled { cursor: progress; border-style: dashed; }
 .refusal .refusal-slab { margin: 0; }
 .refusal-slab p { margin: 0.35rem 0 0; }
 .refusal-slab button { color: var(--on-refusal); border-color: var(--on-refusal); }
+.refusal-plain { margin: 0.5rem 0; font-size: var(--size-body); font-weight: var(--weight-strong); }
 .refusal-head { display: block; font-family: var(--font-display); font-weight: var(--weight-display); text-transform: uppercase; letter-spacing: 0.04em; }
 .refusal-raw, .raw { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0.35rem 0 0; font-size: var(--size-mono); }
 .raw { font-size: var(--size-small); }

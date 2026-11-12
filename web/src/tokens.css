@@ -16,6 +16,7 @@
   --weight-strong: 700;
   --tracking-display: -0.035em;
   --leading-display: 0.88;
+  --word-spacing-display: 0.2em;   /* tight letters, but words must stay apart */
 
   /* type sizes */
   --size-body: 1.0625rem;
