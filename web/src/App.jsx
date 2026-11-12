@@ -1,22 +1,14 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
-import { loadKey, createKey, clearKey, publicKeySpkiB64, signedFetch, syncClock } from './homeKey.js';
+import { loadKey, createKey, clearKey, publicKeySpkiB64, signedFetch } from './homeKey.js';
+import { plain, usePoll } from './api.js';
+import { Split, Tiles, BillTile, usdc } from './parts.jsx';
+import { SLOTS, usePocketMotion, useFlipIds } from './motion.js';
+import { Phone } from './phone.jsx';
 
-const usdc = (micro) => (Number(micro) / 1e6).toFixed(2);
-const plain = async (path, init = {}) => {
-  const r = await fetch(path, { ...init, headers: { 'Content-Type': 'application/json', ...(init.headers ?? {}) }, body: init.body ? JSON.stringify(init.body) : undefined });
-  syncClock(r);
-  return { status: r.status, body: await r.json().catch(() => null) };
-};
+const Refused = ({ head = 'Refused', children }) => <div className="refusal-slab" role="alert"><b className="refusal-head">{head}</b>{children}</div>;
 
-function usePoll(fetcher, deps, ms = 2000) {
-  const [data, setData] = useState(null);
-  const load = useCallback(() => fetcher().then(setData).catch(() => {}), deps); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { load(); const t = setInterval(load, ms); return () => clearInterval(t); }, [load, ms]);
-  return [data, load];
-}
-
-// ---------------------------------------------------------------- Pay page (public)
+// ---------------------------------------------------------------- Pay page (public). Room: cobalt.
 function Pay({ handle }) {
   const [info] = usePoll(() => plain(`/api/pay/${handle}`), [handle], 60000);
   const [amount, setAmount] = useState('5');
@@ -26,38 +18,43 @@ function Pay({ handle }) {
   const [mockMsg, setMockMsg] = useState('');
   const [status] = usePoll(() => (quote ? plain(`/api/pay/${handle}/status?address=${quote.address}`) : Promise.resolve(null)), [quote?.address], 3000);
   const [mode] = usePoll(() => plain('/api/mode'), [], 60000);
-  if (info?.status === 404) return <p>This payment link does not exist.</p>;
+  if (info?.status === 404) return <section className="room cobalt fill"><div className="inner"><h1>Not found</h1><p>This payment link does not exist.</p></div></section>;
   const ask = async () => {
     setError('');
     const r = await plain(`/api/pay/${handle}/quote`, { method: 'POST', body: { amountUsdc: Number(amount), refundTo } });
     r.status === 200 ? setQuote(r.body) : setError(r.body?.error ?? 'could not get an address');
   };
   const st = status?.body?.status;
+  const stText = st === 'SUCCESS' ? 'Payment received' : st === 'PROCESSING' ? 'Payment seen, settling…' : st === 'REFUNDED' ? 'Returned to you' : 'Waiting for your payment';
   return (
-    <>
-      <h1>Pay {handle}</h1>
-      <p>Pay with USDC on Solana. Enter an amount and your own Solana address (used only to return the payment if it fails).</p>
-      {!quote && (
-        <p>
-          <input value={amount} onChange={(e) => setAmount(e.target.value)} size={8} aria-label="Amount in USDC" /> USDC<br />
-          <input value={refundTo} onChange={(e) => setRefundTo(e.target.value)} size={44} placeholder="Your Solana address" aria-label="Your Solana address" /><br />
-          <button className="primary" onClick={ask}>Get payment address</button>
-        </p>
-      )}
-      {error && <p role="alert">{error}</p>}
-      {quote && (
-        <>
-          <p>Send <b>{usdc(quote.amountIn)} USDC</b> on <b>Solana</b> to:</p>
-          <p><code style={{ wordBreak: 'break-all' }}>{quote.address}</code></p>
-          <p>Valid until {new Date(quote.deadline).toLocaleString()}. Status: <b>{st === 'SUCCESS' ? 'Payment received' : st === 'PROCESSING' ? 'Payment seen, settling…' : st === 'REFUNDED' ? 'Returned to you' : 'Waiting for your payment'}</b></p>
-          {mode?.body?.mode === 'mock' && st === 'PENDING_DEPOSIT' && <p><button onClick={async () => { const r = await plain('/api/mock/pay', { method: 'POST', body: { address: quote.address } }); setMockMsg(r.body?.ok ? 'simulated' : 'failed'); }}>Mock: simulate this payment</button> {mockMsg}</p>}
-        </>
-      )}
-    </>
+    <section className="room cobalt fill">
+      <div className="inner">
+        <p className="label">Pay link</p>
+        <h1>Pay {handle}</h1>
+        <p className="lede">Pay with USDC on Solana. Enter an amount and your own Solana address (used only to return the payment if it fails).</p>
+        {!quote && (
+          <div className="form">
+            <label>Amount (USDC)<input className="mono" value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" /></label>
+            <label>Your Solana address<input className="mono" value={refundTo} onChange={(e) => setRefundTo(e.target.value)} placeholder="Your Solana address" /></label>
+            <button className="action" onClick={ask}>Get payment address</button>
+          </div>
+        )}
+        {error && <Refused><p className="mono refusal-raw">{error}</p></Refused>}
+        {quote && (
+          <div className="stack">
+            <p>Send <b className="mono">{usdc(quote.amountIn)} USDC</b> on <b>Solana</b> to:</p>
+            <p className="slab mono wrap">{quote.address}</p>
+            <p>Valid until <span className="mono">{new Date(quote.deadline).toLocaleString()}</span></p>
+            <p className="status" role="status"><span className="label">Status</span><b>{stText}</b></p>
+            {mode?.body?.mode === 'mock' && st === 'PENDING_DEPOSIT' && <p><button className="ghost" onClick={async () => { const r = await plain('/api/mock/pay', { method: 'POST', body: { address: quote.address } }); setMockMsg(r.body?.ok ? 'simulated' : 'failed'); }}>Mock: simulate this payment</button> <span className="mono">{mockMsg}</span></p>}
+          </div>
+        )}
+      </div>
+    </section>
   );
 }
 
-// ---------------------------------------------------------------- Phone pairing page (opened from the QR)
+// ---------------------------------------------------------------- Phone pairing page (opened from the QR). Room: cobalt.
 function PairPhone({ id }) {
   const secret = useRef(window.location.hash.slice(1));
   const [state, setState] = useState('claiming');
@@ -79,45 +76,22 @@ function PairPhone({ id }) {
     return () => { stop = true; };
   }, [id]);
   return (
-    <>
-      <h1>Pair this phone</h1>
-      {state === 'claiming' && <p>Connecting…</p>}
-      {state === 'waiting' && <><p>Check that your laptop shows this same code, then confirm on the laptop.</p><p className="code">{code}</p></>}
-      {state === 'paired' && <p>Paired. <a href="/phone">Open the pocket</a></p>}
-      {state === 'failed' && <p role="alert">This pairing link did not work or has expired. Start again on the laptop.</p>}
-    </>
-  );
-}
-
-// ---------------------------------------------------------------- Phone (public API, pocket key only)
-function Phone() {
-  const [key, setKey] = useState(() => { try { return localStorage.getItem('carryPocketKey') || ''; } catch { return ''; } });
-  const headers = key ? { Authorization: `Bearer ${key}` } : undefined;
-  const [s, reload] = usePoll(() => (key ? plain('/api/phone/state', { headers }) : Promise.resolve(null)), [key], 2000);
-  const [bills, reloadBills] = usePoll(() => plain('/api/phone/bills'), [], 3000);
-  const [to, setTo] = useState('');
-  const [amt, setAmt] = useState('1');
-  const [res, setRes] = useState(null);
-  const [sending, setSending] = useState(false);
-  if (!key) return <><h1>Pocket</h1><p>This phone is not paired. On your laptop, open Home and choose Pair phone, then scan the QR code.</p></>;
-  const send = async () => { setSending(true); setRes(null); setRes(await plain('/api/phone/send', { method: 'POST', headers, body: { to, amountUsdc: Number(amt) } })); setSending(false); reload(); };
-  const payBill = async (id) => { setRes(await plain(`/api/phone/bills/${id}/pay`, { method: 'POST', body: {} })); reloadBills(); reload(); };
-  return (
-    <>
-      <h1>Pocket</h1>
-      {s?.status === 200 ? <><p className="big">{usdc(s.body.pocket)} USDC</p><p className="muted">Limit on this phone: {usdc(s.body.ceiling)} USDC · {s.body.note}</p></> : <p>{s ? 'Cannot read the pocket. Pair this phone again from the laptop.' : 'Loading…'}</p>}
-      <h2>Send</h2>
-      <p><input value={to} onChange={(e) => setTo(e.target.value)} size={30} placeholder="Recipient NEAR account" aria-label="Recipient" /> <input value={amt} onChange={(e) => setAmt(e.target.value)} size={5} aria-label="Amount" /> USDC <button className="primary" disabled={sending} onClick={send}>{sending ? 'Sending…' : 'Send'}</button></p>
-      <h2>Bills</h2>
-      {(bills?.body?.bills ?? []).map((b) => (
-        <p key={b.id}>{b.label}: {usdc(b.amount)} USDC to <code>{b.payee.slice(0, 10)}…</code> {b.used ? <b>paid</b> : <button onClick={() => payBill(b.id)}>Pay</button>}</p>
-      ))}
-      {res && <details open><summary>{res.status === 200 ? 'Accepted' : `Refused (HTTP ${res.status})`}</summary><pre style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(res.body, null, 2)}</pre></details>}
-    </>
+    <section className="room cobalt fill">
+      <div className="inner">
+        <p className="label">Pairing</p>
+        <h1>Pair this phone</h1>
+        {state === 'claiming' && <p>Connecting…</p>}
+        {state === 'waiting' && <><p>Check that your laptop shows this same code, then confirm on the laptop.</p><p className="code mono">{code}</p></>}
+        {state === 'paired' && <p>Paired. <a href="/phone">Open the pocket</a></p>}
+        {state === 'failed' && <Refused><p>This pairing link did not work or has expired. Start again on the laptop.</p></Refused>}
+      </div>
+    </section>
   );
 }
 
 // ---------------------------------------------------------------- Home: gate (setup / not the paired laptop / ready)
+const Gate = ({ title, children }) => <section className="room ink fill"><div className="inner"><p className="label">Home</p><h1>{title}</h1>{children}</div></section>;
+
 function HomeGate() {
   const [stage, setStage] = useState('loading'); // loading | setup | blocked | ready | unrecognised
   const [code, setCode] = useState('');
@@ -138,17 +112,16 @@ function HomeGate() {
       if (r.status === 200) setStage('ready'); else { await clearKey(); setError(r.body?.error ?? 'setup failed'); }
     } catch (e) { setError(String(e.message ?? e)); }
   };
-  if (stage === 'loading') return <p>Loading…</p>;
+  if (stage === 'loading') return <Gate title="Home"><p>Loading…</p></Gate>;
   if (stage === 'setup') return (
-    <>
-      <h1>Set up this laptop</h1>
-      <p>Carry will only take orders from this browser. Enter the one-time setup code shown on the server console. This browser then makes a private key that cannot be exported; the server keeps only its public half.</p>
-      <p><input value={code} onChange={(e) => setCode(e.target.value)} size={14} aria-label="Setup code" /> <button className="primary" onClick={setup}>Set up</button></p>
-      {error && <p role="alert">{error}</p>}
-    </>
+    <Gate title="Set up this laptop">
+      <p className="lede">Carry will only take orders from this browser. Enter the one-time setup code shown on the server console. This browser then makes a private key that cannot be exported; the server keeps only its public half.</p>
+      <div className="form"><label>Setup code<input className="mono" value={code} onChange={(e) => setCode(e.target.value)} /></label><button className="action" onClick={setup}>Set up</button></div>
+      {error && <Refused><p className="mono refusal-raw">{error}</p></Refused>}
+    </Gate>
   );
-  if (stage === 'blocked') return <><h1>Home</h1><p role="alert">Another browser is set up as this Carry's home. Open Home on that laptop. If you lost it, run <code>npm run reset-home-key</code> on the server and set up again. Your funds stay safe either way: moving them out needs the owner's NEAR wallet.</p></>;
-  if (stage === 'unrecognised') return <><h1>Home</h1><p role="alert">The server does not recognise this browser's key.</p><button onClick={async () => { await clearKey(); check(); }}>Forget this browser's key</button></>;
+  if (stage === 'blocked') return <Gate title="Home"><Refused head="Blocked"><p>Another browser is set up as this Carry's home. Open Home on that laptop. If you lost it, run <code className="mono">npm run reset-home-key</code> on the server and set up again. Your funds stay safe either way: moving them out needs the owner's NEAR wallet.</p></Refused></Gate>;
+  if (stage === 'unrecognised') return <Gate title="Home"><Refused head="Blocked"><p>The server does not recognise this browser's key.</p></Refused><p><button className="ghost" onClick={async () => { await clearKey(); check(); }}>Forget this browser's key</button></p></Gate>;
   return <HomeApp onUnrecognised={() => setStage('unrecognised')} />;
 }
 
@@ -161,7 +134,8 @@ function PairPanel() {
   useEffect(() => {
     if (!s || !canvas.current) return;
     const base = mode?.body?.publicUrl || window.location.origin;
-    QRCode.toCanvas(canvas.current, `${base}/pair/${s.id}#${s.secret}`, { width: 220, margin: 1 });
+    const css = getComputedStyle(document.documentElement); // QR colours come from the tokens
+    QRCode.toCanvas(canvas.current, `${base}/pair/${s.id}#${s.secret}`, { width: 220, margin: 1, color: { dark: css.getPropertyValue('--ink').trim(), light: css.getPropertyValue('--paper').trim() } });
   }, [s, mode?.body?.publicUrl]);
   useEffect(() => {
     if (!s || ['confirmed', 'expired'].includes(view?.state)) return;
@@ -171,17 +145,29 @@ function PairPanel() {
   const confirm = async () => { await signedFetch(`/api/home/pair/${s.id}/confirm`, { method: 'POST' }); setView({ ...view, state: 'confirmed' }); };
   const cancel = async () => { await signedFetch(`/api/home/pair/${s.id}/cancel`, { method: 'POST' }); setS(null); setView(null); };
   return (
-    <div className="panel">
+    <div className="stack">
       <h2>Pair a phone</h2>
-      {!s && <button className="primary" onClick={start}>Pair phone</button>}
-      {s && view?.state === 'waiting' && <><p>Scan this with the phone camera. The phone gets only its pocket credential.</p><canvas ref={canvas} /><p><button onClick={cancel}>Cancel</button></p></>}
-      {s && view?.state === 'claimed' && <><p>The phone is connected. Does it show this code?</p><p className="code">{view.code}</p><button className="primary" onClick={confirm}>Yes, same code: pair it</button> <button onClick={cancel}>No, cancel</button></>}
-      {s && view?.state === 'confirmed' && <p>Paired. The phone now holds its pocket credential. <button onClick={() => { setS(null); setView(null); }}>Done</button></p>}
-      {s && view?.state === 'expired' && <p>This pairing link expired. <button onClick={() => { setS(null); setView(null); }}>Start again</button></p>}
+      {!s && <p><button className="action" onClick={start}>Pair phone</button></p>}
+      {s && view?.state === 'waiting' && <><p>Scan this with the phone camera. The phone gets only its pocket credential.</p><canvas ref={canvas} className="qr" /><p><button className="ghost" onClick={cancel}>Cancel</button></p></>}
+      {s && view?.state === 'claimed' && <><p>The phone is connected. Does it show this code?</p><p className="code mono">{view.code}</p><p><button className="action" onClick={confirm}>Yes, same code: pair it</button> <button className="ghost" onClick={cancel}>No, cancel</button></p></>}
+      {s && view?.state === 'confirmed' && <p>Paired. The phone now holds its pocket credential. <button className="ghost" onClick={() => { setS(null); setView(null); }}>Done</button></p>}
+      {s && view?.state === 'expired' && <p>This pairing link expired. <button className="ghost" onClick={() => { setS(null); setView(null); }}>Start again</button></p>}
     </div>
   );
 }
 
+// The latest arrival and what became of it, read from the home log (newest first).
+function paydayFrom(events) {
+  const pin = events.find((e) => e.kind === 'payment_in');
+  if (!pin) return null;
+  const after = events.filter((e) => e.id > pin.id);
+  const share = after.filter((e) => e.kind === 'refill_success').at(-1);
+  const skipped = after.some((e) => e.kind === 'refill_skipped');
+  const incoming = Number(pin.amount ?? 0), pocket = share ? Number(share.amount ?? 0) : 0;
+  return { settled: !!share || skipped, incoming, pocket, protectedAmount: Math.max(0, incoming - pocket), over: pocket > incoming, key: `${pin.id}:${share?.id ?? skipped}` };
+}
+
+// ---------------------------------------------------------------- Home (signed). Rooms: ink, paper, emerald, cobalt, ink, paper.
 function HomeApp({ onUnrecognised }) {
   const [s, reloadS] = usePoll(() => signedFetch('/api/home/state'), [], 2000);
   const [log, reloadLog] = usePoll(() => signedFetch('/api/home/log'), [], 2000);
@@ -192,39 +178,112 @@ function HomeApp({ onUnrecognised }) {
   useEffect(() => { if (s?.status === 401) onUnrecognised(); }, [s?.status]); // eslint-disable-line react-hooks/exhaustive-deps
   const st = s?.body;
   const act = async (p, init) => { const r = await signedFetch(p, init); setMsg(r.status === 200 ? (r.body?.note ?? 'done') : JSON.stringify(r.body)); reloadS(); reloadLog(); };
+  const events = log?.body?.events ?? [];
+  const day = paydayFrom(events);
+  const [, tiles] = usePocketMotion(st?.reserve !== undefined ? st.pocket : null, st?.ceiling);
+  const flipIds = useFlipIds(st?.bills);
+  // The split plays when a NEW settled arrival appears after the page loaded; one already settled at load shows its final state.
+  const seen = useRef(undefined);
+  const [play, setPlay] = useState(0);
+  useEffect(() => {
+    if (!log?.body) return;
+    const k = day?.settled ? day.key : null;
+    if (seen.current === undefined) seen.current = k;
+    else if (k && k !== seen.current) { seen.current = k; setPlay((p) => p + 1); }
+  }, [log, day?.key, day?.settled]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <>
-      <h1>Home</h1>
-      {st?.halted && <div className="banner" role="alert"><b>{st.halted.code}</b>: refills are halted until reviewed. <button onClick={() => act('/api/home/engine/clear-halt', { method: 'POST' })}>Clear</button></div>}
-      {st?.reserve !== undefined && <p>Reserve (hidden from phone): <b>{usdc(st.reserve)}</b> USDC · Pocket: <b>{usdc(st.pocket)}</b> / {usdc(st.ceiling)} · Refills left: <b>{usdc(st.allowance)}</b> USDC</p>}
-      {st?.wallets && <p className="muted">Wallets at start: {st.wallets}</p>}
-      <p>Authorise total refills: <input value={allow} onChange={(e) => setAllow(e.target.value)} size={6} /> USDC <button onClick={() => act('/api/home/allowance', { method: 'POST', body: { totalUsdc: Number(allow) } })}>Set</button></p>
-      <PairPanel />
-      <h2>Pre-approved bill</h2>
-      <p>
-        <input value={bill.id} onChange={(e) => setBill({ ...bill, id: e.target.value })} size={8} aria-label="id" />{' '}
-        <input value={bill.payee} onChange={(e) => setBill({ ...bill, payee: e.target.value })} size={24} placeholder="payee account" aria-label="payee" />{' '}
-        <input value={bill.amountUsdc} onChange={(e) => setBill({ ...bill, amountUsdc: e.target.value })} size={5} aria-label="amount" /> USDC{' '}
-        <input value={bill.expiresAt} onChange={(e) => setBill({ ...bill, expiresAt: e.target.value })} size={20} placeholder="expires (ISO date)" aria-label="expires" />{' '}
-        <button onClick={() => act('/api/home/bills', { method: 'POST', body: { ...bill, label: bill.label || bill.id, amountUsdc: Number(bill.amountUsdc), expiresAt: new Date(bill.expiresAt).toISOString() } })}>Save bill</button>
-      </p>
-      {(st?.bills ?? []).map((b) => <p key={b.id}>{b.label}: {usdc(b.amount)} USDC → <code>{b.payee.slice(0, 12)}…</code> until {new Date(b.expiresAt).toLocaleString()} {b.used ? '(paid)' : ''}</p>)}
-      <h2>Withdraw to your exit account</h2>
-      <p><input value={exitAmt} onChange={(e) => setExitAmt(e.target.value)} size={6} aria-label="Exit amount" /> USDC to <code>{st?.exitAccount}</code> <button onClick={() => act('/api/home/exit', { method: 'POST', body: { amountUsdc: Number(exitAmt) } })}>Request withdrawal</button></p>
-      <p className="muted">Carry's approver never approves this. You approve it in your OutLayer dashboard.</p>
-      {msg && <p>{msg}</p>}
-      <h2>Activity</h2>
-      <table>
-        <thead><tr><th>Time</th><th>Event</th><th>USDC</th><th></th></tr></thead>
-        <tbody>
-          {(log?.body?.events ?? []).map((e) => (
-            <tr key={e.id} className={e.ok ? undefined : 'blocked'}>
-              <td>{e.ts.slice(11, 19)}</td><td>{e.kind}{e.ok ? '' : ' ✗'}</td><td>{e.amount == null ? '' : usdc(e.amount)}</td>
-              <td><details><summary>raw</summary><pre style={{ whiteSpace: 'pre-wrap', fontSize: 11 }}>{JSON.stringify(e.detail, null, 1)}</pre></details></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <section className="room ink">
+        <div className="inner">
+          <p className="label">Home</p>
+          <h1>Reserve</h1>
+          {st?.halted && <Refused head={st.halted.code}><p>Refills are halted until reviewed. <button className="ghost" onClick={() => act('/api/home/engine/clear-halt', { method: 'POST' })}>Clear</button></p></Refused>}
+          {st?.reserve !== undefined && <p className="amount mono">{usdc(st.reserve)}<span className="unit"> USDC</span></p>}
+          <p className="muted">Hidden from the phone, always.</p>
+          {st?.wallets && <p className="muted mono small">Wallets at start: {st.wallets}</p>}
+        </div>
+      </section>
+
+      <section className="room paper">
+        <div className="inner">
+          <h2>Payday</h2>
+          {day ? <>
+            <Split audience="home" incoming={day.incoming} pocketShare={day.settled ? day.pocket : null} protectedAmount={day.settled ? day.protectedAmount : null} play={play}
+              note={day.over ? 'The refill was larger than this payment: the pocket was also topped up from what the reserve already held.' : undefined} />
+            <p><button className="ghost" onClick={() => setPlay((p) => p + 1)}>Replay</button> {!day.settled && <span className="muted">Waiting for the pocket's share…</span>}</p>
+          </> : <p className="muted">No payment has arrived yet.</p>}
+        </div>
+      </section>
+
+      <section className="room emerald">
+        <div className="inner two">
+          <div className="stack">
+            <h2>Pocket</h2>
+            {st?.reserve !== undefined && <>
+              <p className="amount-mid mono">{usdc(st.pocket)} <span className="unit">/ {usdc(st.ceiling)}</span></p>
+              <Tiles filled={tiles.filled} from={tiles.from} slots={SLOTS} play={tiles.play} />
+              <p className="muted">Refills left: <b className="mono">{usdc(st.allowance)}</b> USDC</p>
+            </>}
+            <div className="form inline">
+              <label>Authorise total refills (USDC)<input className="mono" value={allow} onChange={(e) => setAllow(e.target.value)} /></label>
+              <button className="action" onClick={() => act('/api/home/allowance', { method: 'POST', body: { totalUsdc: Number(allow) } })}>Set</button>
+            </div>
+          </div>
+          <PairPanel />
+        </div>
+      </section>
+
+      <section className="room cobalt">
+        <div className="inner two">
+          <div className="stack">
+            <h2>Pre-approved bill</h2>
+            <div className="form">
+              <label>Id<input className="mono" value={bill.id} onChange={(e) => setBill({ ...bill, id: e.target.value })} /></label>
+              <label>Payee account<input className="mono" value={bill.payee} onChange={(e) => setBill({ ...bill, payee: e.target.value })} placeholder="payee account" /></label>
+              <label>Amount (USDC)<input className="mono" value={bill.amountUsdc} onChange={(e) => setBill({ ...bill, amountUsdc: e.target.value })} /></label>
+              <label>Expires (ISO date)<input className="mono" value={bill.expiresAt} onChange={(e) => setBill({ ...bill, expiresAt: e.target.value })} placeholder="2030-01-01T00:00:00Z" /></label>
+              <button className="action" onClick={() => act('/api/home/bills', { method: 'POST', body: { ...bill, label: bill.label || bill.id, amountUsdc: Number(bill.amountUsdc), expiresAt: new Date(bill.expiresAt).toISOString() } })}>Save bill</button>
+            </div>
+          </div>
+          <div className="stack">
+            <h2>Bills</h2>
+            <div className="bills">{(st?.bills ?? []).map((b) => <BillTile key={b.id} bill={b} flip={flipIds.has(b.id)} />)}</div>
+            {(st?.bills ?? []).length === 0 && <p className="muted">None saved yet.</p>}
+          </div>
+        </div>
+      </section>
+
+      <section className="room ink">
+        <div className="inner">
+          <h2>Withdraw to your exit account</h2>
+          <div className="form inline">
+            <label>Amount (USDC)<input className="mono" value={exitAmt} onChange={(e) => setExitAmt(e.target.value)} /></label>
+            <button className="action" onClick={() => act('/api/home/exit', { method: 'POST', body: { amountUsdc: Number(exitAmt) } })}>Request withdrawal</button>
+          </div>
+          <p>To <code className="mono">{st?.exitAccount}</code></p>
+          <p className="muted">Carry's approver never approves this. You approve it in your OutLayer dashboard.</p>
+          {msg && <p className="mono wrap">{msg}</p>}
+        </div>
+      </section>
+
+      <section className="room paper">
+        <div className="inner">
+          <h2>Activity</h2>
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>Time</th><th>Event</th><th>USDC</th><th></th></tr></thead>
+              <tbody>
+                {events.map((e) => (
+                  <tr key={e.id} className={e.ok ? undefined : 'blocked'}>
+                    <td className="mono">{e.ts.slice(11, 19)}</td><td>{e.kind}{e.ok ? '' : ' ✗'}</td><td className="mono">{e.amount == null ? '' : usdc(e.amount)}</td>
+                    <td><details><summary>raw</summary><pre className="mono raw">{JSON.stringify(e.detail, null, 1)}</pre></details></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
     </>
   );
 }
@@ -237,8 +296,13 @@ export function App() {
   return (
     <>
       {mode?.mode === 'mock' && <div className="banner">Mock mode: simulated money, no network calls.</div>}
+      <header className="bar">
+        <div className="bar-in">
+          <a className="mark" href="/">Carry</a>
+          {mode && view !== 'pair' && <nav><a href="/home" aria-current={view === 'home' ? 'page' : undefined}>Home</a><a href="/phone" aria-current={view === 'phone' ? 'page' : undefined}>Phone</a><a href={`/pay/${mode.handle}`} aria-current={view === 'pay' ? 'page' : undefined}>Pay link</a></nav>}
+        </div>
+      </header>
       <main>
-        {mode && view !== 'pair' && <nav><a href="/home">Home</a><a href="/phone">Phone</a><a href={`/pay/${mode.handle}`}>Pay link</a></nav>}
         {view === 'pay' ? <Pay handle={path.split('/')[2]} /> : view === 'pair' ? <PairPhone id={path.split('/')[2]} /> : view === 'phone' ? <Phone /> : <HomeGate />}
       </main>
     </>

@@ -1,0 +1,14 @@
+Thu Nov 12 19:44:12 WAT 2026
+✔ pay link: unknown handle 404, bad refund address 400, same payer+amount reuses the address, amount bounds (24.903833ms)
+✔ security headers are set (CSP limits script to the app itself) (10.918041ms)
+✔ voter refuses an expired or stale approval (code APPROVAL_EXPIRED) and casts no vote (38.394417ms)
+✔ engine: a refill resumed after a long pause is refused, no vote, allowance given back (26.611958ms)
+ℹ tests 52
+ℹ suites 0
+ℹ pass 52
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 9141.678417
+Thu Nov 12 19:44:21 WAT 2026

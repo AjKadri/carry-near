@@ -1,18 +1,145 @@
 @import './tokens.css';
-body { margin: 0; font-family: var(--font-body); font-size: var(--font-size-body); background: var(--color-bg); color: var(--color-text); }
-h1 { font-family: var(--font-display); }
-main { max-width: var(--max-width); margin: 0 auto; padding: var(--gutter); }
-nav a { margin-right: var(--gap); color: var(--color-accent); }
-.banner { background: var(--color-notice); color: var(--color-notice-text); padding: 8px var(--gutter); font-size: var(--font-size-small); }
-.muted { color: var(--color-muted); font-size: var(--font-size-small); }
-.big { font-family: var(--font-display); font-size: var(--font-size-display); }
-code, pre { font-family: var(--font-mono); }
-table { width: 100%; border-collapse: collapse; }
-td, th { text-align: left; padding: 4px 8px 4px 0; border-bottom: 1px solid var(--color-border); vertical-align: top; }
-tr.blocked { background: var(--color-danger); color: var(--color-danger-text); }
-button { padding: 6px 12px; border-radius: var(--radius); }
-button.primary { background: var(--color-accent); color: var(--color-accent-text); border: 0; }
-input { padding: 4px 6px; border-radius: var(--radius); max-width: 100%; }
-.panel { border: 1px solid var(--color-border); border-radius: var(--radius); padding: var(--gap); margin: var(--gap) 0; }
-.code { font-family: var(--font-mono); font-size: var(--font-size-display); letter-spacing: 0.15em; }
-@media (prefers-reduced-motion: no-preference) { button { transition: opacity var(--motion-fast); } }
+/* No literal colours in this file: everything comes from tokens.css. */
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; font-family: var(--font-body); font-weight: var(--weight-body); font-size: var(--size-body); line-height: 1.45; background: var(--paper); color: var(--on-paper); font-synthesis: none; }
+a { color: inherit; text-underline-offset: 0.2em; text-decoration-thickness: var(--rule); }
+code, pre { font-family: var(--font-mono); font-size: var(--size-mono); }
+.mono { font-family: var(--font-mono); font-weight: 500; font-variant-numeric: tabular-nums; }
+.small { font-size: var(--size-small); }
+.wrap { overflow-wrap: anywhere; }
+
+/* ---------- rooms: one flat colour per section */
+.room { --bg: var(--paper); --fg: var(--on-paper); --muted: var(--on-paper-muted); background: var(--bg); color: var(--fg); }
+.room.cobalt { --bg: var(--cobalt); --fg: var(--on-cobalt); --muted: var(--on-cobalt-muted); }
+.room.emerald { --bg: var(--emerald); --fg: var(--on-emerald); --muted: var(--on-emerald-muted); }
+.room.ink { --bg: var(--ink); --fg: var(--on-ink); --muted: var(--on-ink-muted); }
+.room > .inner { max-width: var(--max-width); margin: 0 auto; padding: var(--section-pad) var(--gutter); }
+.room.fill { min-height: 80vh; }
+.inner.two { display: grid; gap: var(--section-pad); }
+@media (min-width: 62rem) { .inner.two { grid-template-columns: 1fr 1fr; } }
+.stack > * { margin-block: 0 var(--gap); }
+.muted { color: var(--muted); font-size: var(--size-small); }
+
+/* ---------- type */
+h1, h2 { font-family: var(--font-display); font-weight: var(--weight-display); text-transform: uppercase; letter-spacing: var(--tracking-display); line-height: var(--leading-display); margin: 0 0 var(--gap); }
+h1 { font-size: var(--size-title); }
+h2 { font-size: var(--size-section); }
+h1.label { font-size: var(--size-label); letter-spacing: 0.12em; line-height: 1.2; }
+.label { font-family: var(--font-display); font-weight: var(--weight-strong); font-size: var(--size-label); letter-spacing: 0.12em; text-transform: uppercase; margin: 0 0 var(--gap); }
+.lede { max-width: 36rem; }
+.amount { font-size: var(--size-amount); line-height: 1; letter-spacing: -0.04em; margin: 0 0 var(--gap); }
+.amount-mid { font-size: var(--size-amount-mid); line-height: 1.1; margin: 0 0 var(--gap); }
+.unit { font-family: var(--font-display); font-weight: var(--weight-display); font-size: 0.28em; letter-spacing: 0; }
+.amount-mid .unit { font-size: 0.6em; }
+.code { font-size: var(--size-amount-mid); letter-spacing: 0.15em; }
+.slab { background: var(--ink); color: var(--on-ink); padding: var(--gap) var(--gutter); }
+
+/* ---------- top bar and notice */
+.banner { background: var(--ink); color: var(--on-ink); padding: 0.5rem var(--gutter); font-size: var(--size-small); border-bottom: var(--rule) solid var(--paper); }
+.bar { background: var(--paper); color: var(--on-paper); }
+.bar-in { max-width: var(--max-width); margin: 0 auto; padding: 0.75rem var(--gutter); display: flex; align-items: center; justify-content: space-between; gap: var(--gap); flex-wrap: wrap; }
+.mark { font-family: var(--font-display); font-weight: var(--weight-display); text-transform: uppercase; letter-spacing: var(--tracking-display); font-size: 1.75rem; line-height: 1; text-decoration: none; }
+nav { display: flex; gap: 1.25rem; }
+nav a { font-weight: var(--weight-strong); font-size: var(--size-label); letter-spacing: 0.12em; text-transform: uppercase; text-decoration: none; padding: 0.5rem 0; border-bottom: var(--rule) solid transparent; }
+nav a[aria-current] { border-bottom-color: var(--on-paper); }
+
+/* ---------- forms and buttons */
+.form { display: grid; gap: var(--gap); max-width: 32rem; margin: var(--gap) 0; }
+.form.inline { grid-template-columns: 1fr auto; align-items: end; }
+label { display: grid; gap: 0.4rem; font-weight: var(--weight-strong); font-size: var(--size-label); letter-spacing: 0.1em; text-transform: uppercase; }
+input { font: inherit; font-size: var(--size-body); letter-spacing: 0; text-transform: none; font-weight: var(--weight-body); width: 100%; min-height: var(--tap); padding: 0 0.75rem; background: transparent; color: var(--fg); border: var(--rule) solid var(--fg); border-radius: var(--radius); }
+input.mono { font-family: var(--font-mono); font-weight: 500; }
+input::placeholder { color: var(--muted); opacity: 1; }
+button { font-family: var(--font-display); font-weight: var(--weight-display); text-transform: uppercase; letter-spacing: 0.04em; font-size: var(--size-body); min-height: var(--tap); padding: 0 1.25rem; border: var(--rule) solid var(--fg); border-radius: var(--radius); cursor: pointer; }
+button.action { background: var(--fg); color: var(--bg); }
+button.ghost { background: transparent; color: var(--fg); }
+button:disabled { cursor: progress; border-style: dashed; }
+:focus-visible { outline: var(--rule) solid var(--fg); outline-offset: 3px; }
+.status { display: grid; gap: 0.25rem; border-top: var(--rule) solid var(--fg); padding-top: var(--gap); }
+.status b { font-family: var(--font-display); font-weight: var(--weight-display); text-transform: uppercase; font-size: var(--size-section); letter-spacing: var(--tracking-display); line-height: 1; }
+.qr { display: block; border: var(--rule) solid var(--fg); }
+.accepted { margin-top: var(--gap); border: var(--rule) solid var(--fg); padding: var(--gap); }
+
+/* ---------- payday split */
+.split { position: relative; padding-top: calc(var(--band-height) + 2.6rem); margin: var(--gap) 0; }
+.split-in { position: absolute; top: 0; left: var(--at); transform: translateX(-50%); white-space: nowrap; font-family: var(--font-display); font-weight: var(--weight-display); text-transform: uppercase; font-size: var(--size-label); letter-spacing: 0.12em; }
+.split-stem { position: absolute; top: 2.1rem; bottom: auto; left: var(--at); height: calc(var(--band-height) + 0.5rem); width: var(--rule); transform: translateX(-50%); background: var(--fg); transform-origin: top; z-index: 1; }
+.split-fork { display: flex; min-height: var(--band-height); }
+.split-pocket, .split-protected { display: grid; align-content: space-between; gap: 0.25rem; padding: var(--gap); min-width: 0; }
+.split-pocket { flex: var(--share) 1 0; background: var(--emerald); color: var(--on-emerald); }
+.split-protected { flex: var(--rest) 1 0; background: var(--ink); color: var(--on-ink); }
+.split-name { font-family: var(--font-display); font-weight: var(--weight-display); text-transform: uppercase; letter-spacing: var(--tracking-display); font-size: var(--size-split-name); line-height: 1; }
+.split-amt { font-size: var(--size-body); }
+.split-note { margin: var(--gap) 0 0; font-size: var(--size-small); color: var(--on-paper-muted); }
+
+/* ---------- pocket tiles */
+.tiles { display: grid; grid-template-columns: repeat(10, minmax(0, var(--tile))); gap: 0.35rem; margin: var(--gap) 0; }
+.tile { aspect-ratio: 1; border: var(--rule) dashed var(--muted); }
+.tile.on { background: var(--fg); border: var(--rule) solid var(--fg); }
+
+/* ---------- bills: a tile that flips to Paid */
+.bills { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: var(--gap); }
+.bill { perspective: var(--flip-perspective); }
+.bill-inner { position: relative; transform-style: preserve-3d; }
+.bill-face { display: grid; gap: 0.35rem; align-content: start; padding: var(--gutter); backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.bill-front { background: var(--paper); color: var(--on-paper); }
+.bill-front .label { margin: 0; }
+.bill-front button.action { background: var(--ink); color: var(--on-ink); border-color: var(--ink); margin-top: var(--gap); }
+.bill-back { position: absolute; inset: 0; transform: rotateY(180deg); background: var(--emerald); color: var(--on-emerald); align-content: space-between; }
+.bill-back .label { margin: 0; }
+.bill-amt { font-size: var(--size-amount-mid); line-height: 1.1; }
+.bill-paid { font-family: var(--font-display); font-weight: var(--weight-display); text-transform: uppercase; font-size: var(--size-title); letter-spacing: var(--tracking-display); line-height: 0.85; }
+.is-paid .bill-inner { transform: rotateY(180deg); }
+
+/* ---------- refusal: the only red in the app */
+.refusal { margin-top: var(--gap); }
+.bounce-track { overflow: hidden; padding: 0.25rem 0 var(--gap); }
+.bounce-amount { display: inline-block; background: var(--fg); color: var(--bg); padding: 0.5rem 1rem; font-size: var(--size-amount-mid); }
+.refusal-slab { background: var(--refusal); color: var(--on-refusal); padding: var(--gutter); margin: var(--gap) 0; }
+.refusal .refusal-slab { margin: 0; }
+.refusal-slab p { margin: 0.35rem 0 0; }
+.refusal-slab button { color: var(--on-refusal); border-color: var(--on-refusal); }
+.refusal-head { display: block; font-family: var(--font-display); font-weight: var(--weight-display); text-transform: uppercase; letter-spacing: 0.04em; }
+.refusal-raw, .raw { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0.35rem 0 0; font-size: var(--size-mono); }
+.raw { font-size: var(--size-small); }
+
+/* ---------- activity table */
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; }
+th { text-align: left; font-family: var(--font-display); font-weight: var(--weight-strong); font-size: var(--size-label); letter-spacing: 0.12em; text-transform: uppercase; border-bottom: var(--rule) solid var(--on-paper); padding: 0.5rem 0.75rem 0.5rem 0; }
+td { padding: 0.5rem 0.75rem 0.5rem 0; border-bottom: 1px solid var(--on-paper-muted); vertical-align: top; }
+tr.blocked td { color: var(--refusal); font-weight: var(--weight-strong); }
+summary { cursor: pointer; }
+
+/* ---------- motion. Only when the user has not asked for reduced motion; otherwise every screen is already in its final state. */
+@media (prefers-reduced-motion: no-preference) {
+  /* payday split: the line drops, forks; pocket share goes left, the rest drops into the band */
+  .split.play .split-stem { animation: stem var(--split-stem) var(--ease-out) backwards; }
+  .split.play .split-in { animation: fade var(--motion-slow) var(--ease) backwards; }
+  .split.play .split-pocket { animation: wipe-left var(--split-branch) var(--split-branch-delay) var(--ease-out) backwards; }
+  .split.play .split-protected { animation: drop var(--split-branch) var(--split-branch-delay) var(--ease-out) backwards; }
+  .split.play .split-amt { animation: fade var(--motion-slow) var(--split-label-delay) var(--ease) backwards; }
+  /* refusal: the amount goes out and comes back; then the raw reason */
+  .bounce-amount { animation: bounce var(--refuse-time) var(--ease-out); }
+  .refusal-slab { animation: reveal var(--motion-slow) var(--refuse-reason-delay) var(--ease-out) backwards; }
+  /* refill: tiles pop into the pocket */
+  .tile.pop { animation: pop var(--pop-time) calc(var(--pop-start) + var(--i) * var(--motion-stagger)) var(--ease-bounce) backwards; }
+  /* rent: the bill tile flips to Paid */
+  .bill.flip .bill-inner { animation: flip var(--flip-time) var(--ease-out); }
+  button { transition: transform var(--motion-fast) var(--ease); }
+  button:active:not(:disabled) { transform: translateY(2px); }
+}
+@keyframes stem { from { transform: translateX(-50%) scaleY(0); } }
+@keyframes fade { from { opacity: 0; } }
+@keyframes wipe-left { from { clip-path: inset(0 0 0 100%); } }
+@keyframes drop { from { clip-path: inset(0 0 100% 0); } }
+@keyframes reveal { from { clip-path: inset(0 0 100% 0); } }
+@keyframes bounce {
+  0% { transform: translateX(0); animation-timing-function: var(--ease-out); }
+  45% { transform: translateX(var(--refuse-out)); animation-timing-function: var(--ease-bounce); }
+  100% { transform: translateX(0); }
+}
+@keyframes pop { from { transform: scale(var(--pop-from)); } }
+@keyframes flip { from { transform: rotateY(0deg); } }
