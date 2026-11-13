@@ -67,9 +67,9 @@ test('the link is rendered only on Home: pairing control routes need the home ke
   const panel = app.slice(app.indexOf('function PairPanel'), app.indexOf('// The latest arrival'));
   assert.ok(panel.includes('href={pairUrl}'));
   assert.equal(app.replace(panel, '').includes('pairUrl'), false, 'pairUrl exists only inside PairPanel');
-  assert.equal((app.match(/<PairPanel\s*\/>/g) ?? []).length, 1);
+  assert.equal((app.match(/<PairPanel[^>]*\/>/g) ?? []).length, 1);
   const homeApp = app.slice(app.indexOf('function HomeApp'));
-  assert.ok(homeApp.includes('<PairPanel />'), 'PairPanel is rendered only inside HomeApp (behind the home key gate)');
+  assert.ok(/<PairPanel[^>]*\/>/.test(homeApp), 'PairPanel is rendered only inside HomeApp (behind the home key gate)');
   for (const f of ['web/src/phone.jsx', 'web/src/parts.jsx', 'web/src/motion.js', 'web/src/api.js']) assert.equal(/pair\/\$\{|pairUrl/.test(read(f)), false, f);
 });
 

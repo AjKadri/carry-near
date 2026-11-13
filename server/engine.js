@@ -47,7 +47,12 @@ export function makeEngine({ store, ol, pocketAccount, now = Date.now, topUpEver
 
   // topup = min(ceiling - pocket(actual), allowance left, reserve balance)
   async function plan(key, arrival) {
-    const [pocket, reserve] = await Promise.all([ol.confBalance('pocket'), ol.confBalance('reserve')]);
+    // A timer tick with no arrival and no allowance cannot do anything: do not call the platform at all (this used to be 2 balance reads every 5 s, all day).
+    if (!arrival && store.allowance() < MIN_TOPUP) return null;
+    // Timer tick, nothing arrived: ask for the pocket first; if it is already at its ceiling there is nothing to top up, so the reserve is not read.
+    let pocket = await ol.confBalance('pocket');
+    if (!arrival && store.ceiling() - pocket < MIN_TOPUP) return null;
+    const reserve = await ol.confBalance('reserve');
     const ceiling = store.ceiling(), allowance = store.allowance();
     const room = ceiling > pocket ? ceiling - pocket : 0n;
     const amount = [room, allowance, reserve].reduce((a, b) => (b < a ? b : a));

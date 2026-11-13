@@ -13,7 +13,7 @@ Copyright 2026 AjKadri. Licensed under Apache-2.0 (see `LICENSE`).
 - **Pre-approved bill**: stored from the home app; the phone triggers it by id only.
 - **Home authentication = one laptop device key.** On first setup the laptop's browser generates a non-extractable ECDSA P-256 key (WebCrypto, kept in IndexedDB); the server stores only the public key. Setup needs a one-time code printed on the server console. Every request under `/api/home/*` (bills, refill allowance, halt, exit request, pairing, reserve balance, full log) must carry a signature over method, path, body hash, timestamp and a one-use nonce. Wrong signature, a timestamp more than 60 s off, a replayed nonce or a tampered body gets a bare 401, and the attempt is logged as `home_blocked`. The signature check runs before the route table, so nothing unsigned reaches a home route. The phone API has no route that creates a bill, changes an amount, raises the allowance or reads the reserve.
 - **Phone pairing**: the laptop shows a QR and a confirmation code; the phone claims it and shows the same code; only after the laptop user confirms does the phone receive its pocket credential, once. The phone gets nothing else. The "pairing link" shown under the QR is the same address as the QR (same session, same one-time secret, same 5-minute expiry); it is shown only on Home, can be claimed once, and issues nothing until the laptop confirms. The secret travels in the URL fragment and an `X-Pair-Secret` header, never in a query string or a log (`test/pairing-link.test.js`).
-- **Design ("Colour rooms")**: flat blocks of cobalt, emerald and ink on a paper base, one colour per section; Archivo (uppercase, heavy, tight) for display and body, JetBrains Mono for amounts and IDs. Every colour, font, size and motion value is in `web/src/tokens.css`; a test fails if a literal colour appears anywhere else. Red is used only for refusals and blocked attempts. Motion explains money: the payday split (one incoming line forks; the pocket's share goes to the pocket, the rest drops into the black "Protected" band, which shows no amount on the phone), a refusal (the amount bounces back with the raw reason), a refill (tiles pop into the pocket) and rent (the bill tile flips to "Paid"). With `prefers-reduced-motion` every screen shows its final state with no animation.
+- **Design ("Colour rooms")**: flat blocks of deep teal, aqua and light teal on a paper base, one colour per section; Archivo (uppercase, heavy, tight) for display and body, JetBrains Mono for amounts and IDs. Every colour, font, size and motion value is in `web/src/tokens.css`; a test fails if a literal colour appears anywhere else. Red is used only for refusals and blocked attempts. Outline icons come from Lucide (see Disclosure). Home opens with a plain-words summary ("If your phone is lost tonight, at most X USDC is at risk", X = pocket plus refills still authorised) and the Protected amount, both Home-only; the activity log reads in plain language (Money and System tabs, repeated blocked requests folded, raw JSON behind "raw"). Motion explains money: the payday split (one incoming line forks; the pocket's share goes to the pocket, the rest drops into the deep-teal "Protected" band, which shows no amount on the phone), a refusal (the amount bounces back with the raw reason), a refill (tiles pop into the pocket) and rent (the bill tile flips to "Paid"). With `prefers-reduced-motion` every screen shows its final state with no animation.
 - **The phone never shows a reserve amount**: not in text, in the DOM, or in any API response the phone view loads. `test/phone-privacy.test.js` fails if it does.
 - **`npm run attack`**: replays 30+ attack cases (phone tries to exceed caps, create or edit a bill, raise the allowance; leaked reserve key; altered bill amount and payee; second and simultaneous bill use; wrong-key, replayed, second and expired approval votes; refills above the allowance or ceiling, while halted or frozen; two triggers for one arrival). One PASS/FAIL line per case with the raw refusal; each refused request is shown still pending with balances unchanged. The recorded output is in `evidence/`. Mock output says it is not mainnet.
 - **Mock mode** (default, no keys): an in-memory stand-in for OutLayer and 1Click that speaks the same request shapes and verifies vote signatures. It proves the code paths, not mainnet.
@@ -30,11 +30,11 @@ npm run demo
 
 The terminal prints a one-time setup code. Then:
 
-1. **Home.** Open http://127.0.0.1:8787/home, type the setup code and press "Set up". You see a black "Reserve" room with 0.00 USDC and, further down, "Refills left: 3.00 USDC". Mock mode starts with a demo refill allowance of 3 USDC (set `CARRY_DEMO_ALLOWANCE_USDC` to change it; live mode always starts at 0).
+1. **Home.** Open http://127.0.0.1:8787/home, type the setup code and press "Set up". Home opens on a deep-teal summary: "If your phone is lost tonight, at most 3.00 USDC is at risk" (a 0.00 pocket plus the 3.00 of refills the demo has authorised) and "Protected: 0.00 USDC · hidden from your phone". Below it are the three-step "How Carry protects you" strip, a "No payments yet" note and, further down, "Refills left: 3.00 USDC". Mock mode starts with a demo refill allowance of 3 USDC (set `CARRY_DEMO_ALLOWANCE_USDC` to change it; live mode always starts at 0).
 2. **First payment.** In a second tab open http://127.0.0.1:8787/pay/demo. The amount is already 5. Type any Solana address (for example `7puyGCiSnh55z3EzWEr8MKDBw9FYH2izq4K4mXPNpcuo`), press "Get payment address", then press "Mock: simulate this payment". The page changes to "Payment received".
-3. **Payday split.** Back on Home, after a few seconds the Payday panel shows one incoming line of 5.00 forking into **Pocket +3.00** (emerald) and **Protected +2.00** (black). The Reserve now reads 2.00 USDC and the Pocket 3.00 / 20.00. Press "Replay" to watch the split again.
+3. **Payday split.** Back on Home, after a few seconds the Payday panel shows one incoming line of 5.00 forking into **Pocket +3.00** (aqua) and **Protected +2.00** (deep teal). The summary now reads "at most 3.00 USDC" (the pocket; no refills left) and "Protected: 2.00 USDC". The Pocket room shows 3.00 / 20.00. Press "Replay" to watch the split again. The Activity list at the bottom says "Payment received 5.00" and "Moved 3.00 to your pocket" in plain words, with the raw record behind "raw".
 4. **Pair the phone view.** The phone is paired from Home. On Home press "Pair phone": a QR code appears with a "pairing link" under it. With a real phone you scan the QR (see below). On the same machine, right-click "pairing link", copy the link address, and open it in a **private window** (or a second browser): that window is "the phone". It shows a 6-digit code; Home shows the same code. Press "Yes, same code: pair it" on Home. The private window says "Paired" and offers "Open the pocket".
-5. **Phone view.** In that window open http://127.0.0.1:8787/phone. It shows Pocket 3.00 USDC, "Holds up to 20.00 USDC", "Sends up to 10.00 at a time", the same Payday split with the black band labelled only "Protected" (never an amount), a Send form and the bills. Type any recipient (`someone.near`), amount 11, press "Send": a red slab says "Blocked: this phone can send at most 10.00 USDC at a time." with the raw refusal below it.
+5. **Phone view.** In that window open http://127.0.0.1:8787/phone. It shows Pocket 3.00 USDC, "Holds up to 20.00 USDC", "Sends up to 10.00 at a time", the same Payday split with the deep-teal band labelled only "Protected" (never an amount), a Send form and the bills. Type any recipient (`someone.near`), amount 11, press "Send": a red slab says "Blocked: this phone can send at most 10.00 USDC at a time." with the raw refusal below it.
 6. **Rent (optional).** On Home, "Pre-approved bill": Id `rent`, Payee `d7041ab1063b3f017ae4d43857b225c2897b0d39682cbd2048c539a04b4805a4` (the mock landlord, which is on the mock reserve's whitelist), Amount 15, Expires `2030-01-01T00:00:00Z`, press "Save bill". Make a second payment of 20 on the pay page (step 2) so the reserve holds at least 15, then on the phone view press "Pay" on the Rent tile: it flips to "Paid".
 
 Other pages: the pay link is http://127.0.0.1:8787/pay/demo and the activity log is at the bottom of Home. With `prefers-reduced-motion` every screen shows its final state with no animation.
@@ -59,11 +59,11 @@ npm run contrast  # WCAG contrast for every text/background pair
 
 ## Attack results
 
-`npm run attack` runs every case against an in-process mock of OutLayer and 1Click. `npm run attack -- --live --yes` runs the same cases against the real locked mainnet wallets with tiny amounts (a spend cap of 0.25 USDC). Every run writes a file to `evidence/` with one PASS/FAIL line per case.
+`npm run attack` runs every case against an in-process mock of OutLayer and 1Click. `npm run attack -- --live --yes` runs the same cases against the real locked mainnet wallets with tiny amounts (a spend cap of 0.25 USDC). Every run writes a file to `evidence/` with one PASS/FAIL line per case. `evidence/video/attack-terminal.mp4` (with the same text in `attack-terminal.txt`) is a replay, at reading speed, of the recorded output of `npm run attack` (mock): the phone's attempts to raise a limit, read the reserve, withdraw and edit a bill, and their refusals. It is not a live run.
 
 | Run | Summary line | File |
 |---|---|---|
-| Newest mock run (13 Nov 2026) | `38 PASS, 0 FAIL, 2 SKIP, 1 INFO` | `evidence/attack-mock-2026-11-13T08-00-45-030Z.txt` |
+| Newest mock run (13 Nov 2026) | `38 PASS, 0 FAIL, 2 SKIP, 1 INFO` | `evidence/attack-mock-2026-11-13T11-23-19-073Z.txt` |
 | Mock run on the deployed VPS code (11 Nov 2026) | `38 PASS, 0 FAIL, 2 SKIP, 1 INFO` | `evidence/attack-mock-deployed-vps-2026-11-11T20-04-48Z.txt` |
 | Live run 1 (11 Nov 2026, mainnet) | `26 PASS, 0 FAIL, 2 SKIP, 1 INFO, 1 FINDING` | `evidence/attack-live-2026-11-11T12-47-16-288Z.txt` |
 | Live run 2, resume (B5, B7, B8) | `3 PASS, 0 FAIL, 0 SKIP, 0 INFO` | `evidence/attack-live-2026-11-11T13-01-32-880Z.txt` |
@@ -91,7 +91,8 @@ Everything below is on public chains. Full records, with the file each fact come
 
 - **A real 1 USDC payment on Solana into the pay-link flow:** [Solscan](https://solscan.io/tx/ppa1Qx1ciR71GxZGGiMzzncwxdGNNGV83cwHDB6KAy992uWzUwQhY1GBALrRyjYBRHx8QoTw17x6xUJBEvUH8xA). It settled to the reserve's confidential balance in under 9 minutes (0.999798 USDC after fees).
 - **Carry's own live end-to-end run, 11 Nov 2026 11:02-11:03 UTC:** payment 0.999798 USDC detected, refill planned, guard approved, approver voted, money in the pocket about 8 seconds after detection, no human tap (`evidence/SPIKE.md`, "Live end-to-end B+C"; run log `evidence/spike/live-e2e-2026-11-11.log`). A second live refill of 0.03 USDC (OutLayer request `b4d1fe29-1ee7-4e07-a103-f58ce68f65ae`, state success) is in live run 2.
-- **No explorer link for the refills.** The notes record the refill requests and shortened chain hashes only. I tried to match them on NearBlocks and could not do so with certainty, so no refill is linked and nothing is guessed. The attempt is described in `evidence/mainnet-links.md`.
+- **A refill with a public trail:** the 0.25 USDC refill of 9 Nov 2026 (a withdrawal to the pocket) is two NEAR transactions, [Ctf1jaTE…](https://nearblocks.io/txns/Ctf1jaTEJ7HckmQqcjM2eiMEq12d1dWKoZnk16HohGin) and [76u18TFg…](https://nearblocks.io/txns/76u18TFgXdeqw25LaSdMH1VSPKs6Tqjrq8EoxHnh1pX4). Both are `execute_intents` calls; the second pays 0.245473 USDC to the pocket. The full hashes come from OutLayer's own record of the request, and `evidence/mainnet-links.md` lists what each transaction shows.
+- **The 11 Nov live refills have no on-chain transaction.** They are confidential transfers inside the intents system: OutLayer's records for them carry an `intent_hash` and no chain transaction hash, so there is nothing to link (`evidence/mainnet-links.md`, section 5).
 
 ## Deployment
 
@@ -116,7 +117,9 @@ A recovery code for the home key (today, losing the laptop's browser data means 
 
 `evidence/SPIKE.md` and `evidence/spike/` are copies of the spike notes and logs. Before copying, every file was scanned for API keys, seeds, private keys, `wk_` keys, handoff URLs and every secret value in the project's `.env` files; nothing was found. The server's address was removed from the notes.
 
-Libraries: express, react, react-dom, vite, @vitejs/plugin-react, qrcode, and esbuild (dev only, used by the tests to bundle the web components). Code in this repo is AI-assisted.
+Libraries: express, react, react-dom, vite, @vitejs/plugin-react, qrcode, lucide-react, and esbuild (dev only, used by the tests to bundle the web components). Code in this repo is AI-assisted.
+
+Icons: **Lucide** (`lucide-react`, bundled into the app's own JavaScript, no CDN), licensed ISC; the icons derived from the Feather project are MIT (Copyright 2013-present Cole Bemis). Both licence texts are in `web/public/licenses/LUCIDE-LICENSE.txt`.
 
 Fonts (self-hosted from `web/public/fonts/`, no font CDN): **Archivo** (variable, latin subset), Copyright 2020 The Archivo Project Authors (https://github.com/Omnibus-Type/Archivo), and **JetBrains Mono** (500, latin subset), Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono). Both are licensed under the SIL Open Font License 1.1; the licence texts are in `web/public/fonts/OFL-Archivo.txt` and `OFL-JetBrainsMono.txt`. The font files were taken unmodified from the npm packages `@fontsource-variable/archivo` and `@fontsource/jetbrains-mono`.
 
@@ -124,14 +127,19 @@ Text contrast (WCAG 2.x, all pairs meet AA 4.5:1). `npm run contrast` (`scripts/
 
 | Pair | Colours | Ratio |
 |---|---|---|
-| Text on paper | ink #0C0D10 on #F3F0E8 | 17.06 |
-| Muted on paper | #4B4B53 on #F3F0E8 | 7.59 |
-| Text on cobalt | #F3F0E8 on #1B3BCB | 7.28 |
-| Muted on cobalt | #CAD3FF on #1B3BCB | 5.63 |
-| Text on emerald | #F3F0E8 on #0A6446 | 6.31 |
-| Muted on emerald | #CBEBDC on #0A6446 | 5.63 |
-| Text on ink | #F3F0E8 on #0C0D10 | 17.06 |
-| Muted on ink | #B4B8C4 on #0C0D10 | 9.80 |
-| Refusal slab text | #F3F0E8 on #B3121B | 6.11 |
-| Blocked row text | #B3121B on #F3F0E8 | 6.11 |
-| Buttons (room colour on paper) | cobalt 7.28, emerald 6.31, ink 17.06 | see the script |
+| Text on paper | #0D1B1C on #F1F4F2 | 15.93 |
+| Muted on paper | #4A5C5D on #F1F4F2 | 6.36 |
+| Text on mist (light teal) | #0D1B1C on #DDEBE7 | 14.37 |
+| Muted on mist | #41585A on #DDEBE7 | 6.18 |
+| Text on teal | #F1F4F2 on #0B3B3C | 11.12 |
+| Muted on teal | #B5CFCB on #0B3B3C | 7.48 |
+| Aqua highlight on teal | #7FD1C7 on #0B3B3C | 6.95 |
+| Text on aqua | #0D1B1C on #7FD1C7 | 9.95 |
+| Muted on aqua | #17403F on #7FD1C7 | 6.43 |
+| Teal on paper (outlines, accents) | #0B3B3C on #F1F4F2 | 11.12 |
+| Teal on mist | #0B3B3C on #DDEBE7 | 10.04 |
+| Primary button: paper on teal | #F1F4F2 on #0B3B3C | 11.12 |
+| Button in a teal room: ink on aqua | #0D1B1C on #7FD1C7 | 9.95 |
+| Refusal slab text | #F1F4F2 on #B3121B | 6.28 |
+| Blocked row text (red on paper) | #B3121B on #F1F4F2 | 6.28 |
+| Blocked row text (red on mist) | #B3121B on #DDEBE7 | 5.67 |

@@ -5,11 +5,16 @@ import { plain, usePoll } from './api.js';
 import { Split, Tiles, BillTile, Refusal, usdc } from './parts.jsx';
 import { SLOTS, usePocketMotion, useFlipIds } from './motion.js';
 import { Phone } from './phone.jsx';
+import { Ico, Wallet, Split as SplitIco, ReceiptText, LogOut, Smartphone, ArrowDownLeft } from './icons.jsx';
+import { Protects } from './protects.jsx';
+import { Empty } from './empty.jsx';
+import { HomeSummary } from './home-summary.jsx';
+import { ActivityPanel } from './activity.jsx';
 
 const Msg = ({ msg, where }) => msg?.where !== where ? null : msg.ok ? <p className="mono wrap" role="status">{msg.text}</p> : <Refusal status={msg.status} body={msg.body} play={msg.status} subject="the reserve" />;
 const Refused = ({ head = 'Refused', children }) => <div className="refusal-slab" role="alert"><b className="refusal-head">{head}</b>{children}</div>;
 
-// ---------------------------------------------------------------- Pay page (public). Room: cobalt.
+// ---------------------------------------------------------------- Pay page (public). Room: teal.
 function Pay({ handle }) {
   const [info] = usePoll(() => plain(`/api/pay/${handle}`), [handle], 60000);
   const [amount, setAmount] = useState('5');
@@ -19,7 +24,7 @@ function Pay({ handle }) {
   const [mockMsg, setMockMsg] = useState('');
   const [status] = usePoll(() => (quote ? plain(`/api/pay/${handle}/status?address=${quote.address}`) : Promise.resolve(null)), [quote?.address], 3000);
   const [mode] = usePoll(() => plain('/api/mode'), [], 60000);
-  if (info?.status === 404) return <section className="room cobalt fill"><div className="inner"><h1>Not found</h1><p>This payment link does not exist.</p></div></section>;
+  if (info?.status === 404) return <section className="room teal fill"><div className="inner"><h1>Not found</h1><p>This payment link does not exist.</p></div></section>;
   const ask = async () => {
     setError('');
     const r = await plain(`/api/pay/${handle}/quote`, { method: 'POST', body: { amountUsdc: Number(amount), refundTo } });
@@ -28,7 +33,8 @@ function Pay({ handle }) {
   const st = status?.body?.status;
   const stText = st === 'SUCCESS' ? 'Payment received' : st === 'PROCESSING' ? 'Payment seen, settling…' : st === 'REFUNDED' ? 'Returned to you' : 'Waiting for your payment';
   return (
-    <section className="room cobalt fill">
+    <>
+    <section className="room teal fill">
       <div className="inner">
         <p className="label">Pay link</p>
         <h1>Pay {handle}</h1>
@@ -52,10 +58,12 @@ function Pay({ handle }) {
         )}
       </div>
     </section>
+    <Protects />
+    </>
   );
 }
 
-// ---------------------------------------------------------------- Phone pairing page (opened from the QR). Room: cobalt.
+// ---------------------------------------------------------------- Phone pairing page (opened from the QR). Room: teal.
 function PairPhone({ id }) {
   const secret = useRef(window.location.hash.slice(1));
   const [state, setState] = useState('claiming');
@@ -77,7 +85,7 @@ function PairPhone({ id }) {
     return () => { stop = true; };
   }, [id]);
   return (
-    <section className="room cobalt fill">
+    <section className="room teal fill">
       <div className="inner">
         <p className="label">Pairing</p>
         <h1>Pair this phone</h1>
@@ -91,7 +99,7 @@ function PairPhone({ id }) {
 }
 
 // ---------------------------------------------------------------- Home: gate (setup / not the paired laptop / ready)
-const Gate = ({ title, children }) => <section className="room ink fill"><div className="inner"><p className="label">Home</p><h1>{title}</h1>{children}</div></section>;
+const Gate = ({ title, children }) => <section className="room teal fill"><div className="inner"><p className="label">Home</p><h1>{title}</h1>{children}</div></section>;
 
 function HomeGate() {
   const [stage, setStage] = useState('loading'); // loading | setup | blocked | ready | unrecognised
@@ -126,7 +134,7 @@ function HomeGate() {
   return <HomeApp onUnrecognised={() => setStage('unrecognised')} />;
 }
 
-function PairPanel() {
+function PairPanel({ paired }) {
   const [s, setS] = useState(null); // { id, secret, expiresAt }
   const [view, setView] = useState(null);
   const canvas = useRef(null);
@@ -148,7 +156,9 @@ function PairPanel() {
   const cancel = async () => { await signedFetch(`/api/home/pair/${s.id}/cancel`, { method: 'POST' }); setS(null); setView(null); };
   return (
     <div className="stack">
-      <h2>Pair a phone</h2>
+      <h2><Ico as={Smartphone} /> Pair a phone</h2>
+      {!s && !paired && <Empty icon={Smartphone} head="No phone paired yet." next="Press Pair phone, then scan the QR code with your phone (or open the pairing link in a private window)." />}
+      {!s && paired && <p className="muted">A phone has been paired. You can pair another at any time.</p>}
       {!s && <p><button className="action" onClick={start}>Pair phone</button></p>}
       {s && view?.state === 'waiting' && <><p>Scan this with the phone camera. The phone gets only its pocket credential.</p><canvas ref={canvas} className="qr" /><p className="muted">No camera? Open this link in a private window instead: <a className="mono wrap" href={pairUrl} target="_blank" rel="noreferrer">pairing link</a></p><p><button className="ghost" onClick={cancel}>Cancel</button></p></>}
       {s && view?.state === 'claimed' && <><p>The phone is connected. Does it show this code?</p><p className="code mono">{view.code}</p><p><button className="action" onClick={confirm}>Yes, same code: pair it</button> <button className="ghost" onClick={cancel}>No, cancel</button></p></>}
@@ -169,13 +179,14 @@ function paydayFrom(events) {
   return { settled: !!share || skipped, incoming, pocket, protectedAmount: Math.max(0, incoming - pocket), over: pocket > incoming, key: `${pin.id}:${share?.id ?? skipped}` };
 }
 
-// ---------------------------------------------------------------- Home (signed). Rooms: ink, paper, emerald, cobalt, ink, paper.
+// ---------------------------------------------------------------- Home (signed). Rooms: teal, paper, mist, paper, teal, mist, paper.
 function HomeApp({ onUnrecognised }) {
   const [s, reloadS] = usePoll(() => signedFetch('/api/home/state'), [], 2000);
   const [log, reloadLog] = usePoll(() => signedFetch('/api/home/log'), [], 2000);
   const [allow, setAllow] = useState('40');
   const [bill, setBill] = useState({ id: 'rent', label: 'Rent', payee: '', amountUsdc: '15', expiresAt: '' });
   const [exitAmt, setExitAmt] = useState('1');
+  const [mode] = usePoll(() => plain('/api/mode'), [], 60000);
   const [msg, setMsg] = useState(null);
   useEffect(() => { if (s?.status === 401) onUnrecognised(); }, [s?.status]); // eslint-disable-line react-hooks/exhaustive-deps
   const st = s?.body;
@@ -197,34 +208,33 @@ function HomeApp({ onUnrecognised }) {
     if (seen.current === undefined) seen.current = k;
     else if (k && k !== seen.current) { seen.current = k; setPlay((p) => p + 1); }
   }, [log, day?.key, day?.settled]); // eslint-disable-line react-hooks/exhaustive-deps
+  const paired = events.some((e) => e.kind === 'pair_confirmed');
+  const bills = st?.bills ?? [];
   return (
     <>
-      <section className="room ink">
-        <div className="inner">
-          <p className="label">Home</p>
-          <h1>Reserve</h1>
-          {st?.halted && <Refused head={st.halted.code}><p>Refills are halted until reviewed. <button className="ghost" onClick={() => act('/api/home/engine/clear-halt', { method: 'POST' }, () => 'Halt cleared. Refills resume on the next cycle.')}>Clear</button></p></Refused>}
-          {st?.reserve !== undefined && <p className="amount mono">{usdc(st.reserve)}<span className="unit"> USDC</span></p>}
-          <p className="muted">Hidden from the phone, always.</p>
-          {st?.wallets && <p className="muted mono small">Wallets at start: {st.wallets}</p>}
-        </div>
-      </section>
+      <HomeSummary st={st}>
+        {st?.halted && <Refused head={st.halted.code}><p>Refills are halted until reviewed. <button className="ghost" onClick={() => act('/api/home/engine/clear-halt', { method: 'POST' }, () => 'Halt cleared. Refills resume on the next cycle.')}>Clear</button></p></Refused>}
+      </HomeSummary>
 
-      <section className="room paper">
+      <Protects />
+
+      <section className="room mist">
         <div className="inner">
-          <h2>Payday</h2>
+          <h2><Ico as={SplitIco} /> Payday</h2>
           {day ? <>
             <Split audience="home" incoming={day.incoming} pocketShare={day.settled ? day.pocket : null} protectedAmount={day.settled ? day.protectedAmount : null} play={play}
               note={day.over ? 'The refill was larger than this payment: the pocket was also topped up from what the reserve already held.' : undefined} />
             <p><button className="ghost" onClick={() => setPlay((p) => p + 1)}>Replay</button> {!day.settled && <span className="muted">Waiting for the pocket's share…</span>}</p>
-          </> : <p className="muted">No payment has arrived yet.</p>}
+          </> : <Empty icon={ArrowDownLeft} head="No payments yet." next="Share your pay link with a client. When money arrives, the split appears here: one line forking into your pocket and the Protected band.">
+            <p><a href={`/pay/${mode?.body?.handle ?? 'demo'}`}>Open your pay link</a>{mode?.body?.mode === 'mock' && <span className="muted"> · demo: press "Mock: simulate this payment" on that page</span>}</p>
+          </Empty>}
         </div>
       </section>
 
-      <section className="room emerald">
+      <section className="room paper">
         <div className="inner two">
           <div className="stack">
-            <h2>Pocket</h2>
+            <h2><Ico as={Wallet} /> Pocket</h2>
             {st?.reserve !== undefined && <>
               <p className="amount-mid mono">{usdc(st.pocket)} <span className="unit">/ {usdc(st.ceiling)}</span></p>
               <Tiles filled={tiles.filled} from={tiles.from} slots={SLOTS} play={tiles.play} />
@@ -236,14 +246,14 @@ function HomeApp({ onUnrecognised }) {
             </div>
             <Msg msg={msg} where="/api/home/allowance" />
           </div>
-          <PairPanel />
+          <PairPanel paired={paired} />
         </div>
       </section>
 
-      <section className="room cobalt">
+      <section className="room teal">
         <div className="inner two">
           <div className="stack">
-            <h2>Pre-approved bill</h2>
+            <h2><Ico as={ReceiptText} /> Pre-approved bill</h2>
             <div className="form">
               <label>Id<input className="mono" value={bill.id} onChange={(e) => setBill({ ...bill, id: e.target.value })} /></label>
               <label>Payee account<input className="mono" value={bill.payee} onChange={(e) => setBill({ ...bill, payee: e.target.value })} placeholder="payee account" /></label>
@@ -254,16 +264,16 @@ function HomeApp({ onUnrecognised }) {
             <Msg msg={msg} where="/api/home/bills" />
           </div>
           <div className="stack">
-            <h2>Bills</h2>
-            <div className="bills">{(st?.bills ?? []).map((b) => <BillTile key={b.id} bill={b} flip={flipIds.has(b.id)} />)}</div>
-            {(st?.bills ?? []).length === 0 && <p className="muted">None saved yet.</p>}
+            <h2><Ico as={ReceiptText} /> Bills</h2>
+            <div className="bills">{bills.map((b) => <BillTile key={b.id} bill={b} flip={flipIds.has(b.id)} />)}</div>
+            {bills.length === 0 && <Empty icon={ReceiptText} head="No bills yet." next="Save one with the form. Your phone can pay it by its id only, never with another amount or payee." />}
           </div>
         </div>
       </section>
 
-      <section className="room ink">
+      <section className="room mist">
         <div className="inner">
-          <h2>Withdraw to your exit account</h2>
+          <h2><Ico as={LogOut} /> Withdraw to your exit account</h2>
           <div className="form inline">
             <label>Amount (USDC)<input className="mono" value={exitAmt} onChange={(e) => setExitAmt(e.target.value)} /></label>
             <button className="action" onClick={() => act('/api/home/exit', { method: 'POST', body: { amountUsdc: Number(exitAmt) } }, (b) => `Withdrawal requested for ${Number(exitAmt).toFixed(2)} USDC: approve it in your OutLayer dashboard (request ${String(b.requestId ?? '').slice(0, 8)}, status ${b.status}).`)}>Request withdrawal</button>
@@ -274,24 +284,7 @@ function HomeApp({ onUnrecognised }) {
         </div>
       </section>
 
-      <section className="room paper">
-        <div className="inner">
-          <h2>Activity</h2>
-          <div className="table-wrap">
-            <table>
-              <thead><tr><th>Time</th><th>Event</th><th>USDC</th><th></th></tr></thead>
-              <tbody>
-                {events.map((e) => (
-                  <tr key={e.id} className={e.ok ? undefined : 'blocked'}>
-                    <td className="mono">{e.ts.slice(11, 19)}</td><td>{e.kind}{e.ok ? '' : ' ✗'}</td><td className="mono">{e.amount == null ? '' : usdc(e.amount)}</td>
-                    <td><details><summary>raw</summary><pre className="mono raw">{JSON.stringify(e.detail, null, 1)}</pre></details></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
+      <ActivityPanel events={events} />
     </>
   );
 }

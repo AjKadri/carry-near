@@ -19,25 +19,53 @@ export function liveTransport({ base, keys }) {
 // Remove anything that looks like a key before it reaches a log or a response.
 export const scrub = (x) => JSON.stringify(x).replace(/(wk_[A-Za-z0-9]+|Bearer\s+[^\s"]+|ed25519:[A-Za-z0-9]{60,})/g, '[REDACTED]');
 
-export function makeOutLayer(transport, { approver, recipient = 'outlayer.near' } = {}) {
+// A temporary platform problem: a 5xx answer, a timeout or a dropped connection. Never a 4xx (those are real answers).
+export const isTransient = (e) => (typeof e?.status === 'number' && e.status >= 500) || ['TimeoutError', 'AbortError'].includes(e?.name)
+  || /fetch failed|ECONNRESET|ETIMEDOUT|UND_ERR|timed out|aborted due to timeout/i.test(String(e?.message ?? ''));
+
+// Retry a READ (never a money-moving call) with a short backoff. Annotates the final error with the call, status and attempts.
+export async function retryRead(call, fn, { attempts = 3, baseMs = 500, sleep = (ms) => new Promise((r) => setTimeout(r, ms)) } = {}) {
+  let last;
+  for (let i = 1; i <= attempts; i++) {
+    try { return await fn(); } catch (err) {
+      last = err; err.call = call; err.attempts = i; err.transient = isTransient(err);
+      const timedOut = ['TimeoutError', 'AbortError'].includes(err?.name);
+      if (!err.transient || i === attempts || (timedOut && i >= 2)) break; // a timeout already cost 30 s; one retry is enough
+      await sleep(baseMs * 3 ** (i - 1));
+    }
+  }
+  throw last;
+}
+
+export function makeOutLayer(transport, { approver, recipient = 'outlayer.near', retryOpts = {} } = {}) {
   const usdc = (balances) => BigInt((balances ?? []).find((b) => b.token === USDC_TOKEN)?.balance ?? '0');
   const ol = {
     transport,
     async policyState(role) {
-      const r = await transport(role, 'GET', '/wallet/v1/policy');
-      if (r.status !== 200) throw new Error(`policy read failed for ${role}: HTTP ${r.status}`);
+      const r = await retryRead(`GET /wallet/v1/policy (${role})`, async () => {
+        const x = await transport(role, 'GET', '/wallet/v1/policy');
+        if (x.status !== 200) { const e = new Error(`policy read failed for ${role}: HTTP ${x.status}`); e.status = x.status; throw e; }
+        return x;
+      }, retryOpts);
       return { role, version: r.body.version, locked: !!r.body.locked, frozen: !!r.body.frozen, usage: r.body.usage ?? {} };
     },
     async confBalance(auth) {
-      const r = await transport(auth, 'GET', '/wallet/v1/confidential/balance');
-      if (r.status !== 200) { const e = new Error(`balance read failed: HTTP ${r.status} ${scrub(r.body).slice(0, 200)}`); e.status = r.status; throw e; }
+      const who = typeof auth === 'string' ? auth : 'phone key';
+      const r = await retryRead(`GET /wallet/v1/confidential/balance (${who})`, async () => {
+        const x = await transport(auth, 'GET', '/wallet/v1/confidential/balance');
+        if (x.status !== 200) { const e = new Error(`balance read failed: HTTP ${x.status} ${scrub(x.body).slice(0, 200)}`); e.status = x.status; throw e; }
+        return x;
+      }, retryOpts);
       return usdc(r.body.balances);
     },
     reserveTransfer: (to, amount, idem) => transport('reserve', 'POST', '/wallet/v1/confidential/transfer', { to, token: USDC_TOKEN, amount: String(amount) }, idem ? { 'Idempotency-Key': idem } : {}),
     reserveWithdraw: (to, amount, idem) => transport('reserve', 'POST', '/wallet/v1/confidential/withdraw', { to, token: USDC_TOKEN, amount: String(amount), chain: 'near' }, idem ? { 'Idempotency-Key': idem } : {}),
     async pendingApprovals() {
-      const r = await transport('reserve', 'GET', '/wallet/v1/pending_approvals');
-      if (r.status !== 200) throw new Error(`pending approvals read failed: HTTP ${r.status}`);
+      const r = await retryRead('GET /wallet/v1/pending_approvals', async () => {
+        const x = await transport('reserve', 'GET', '/wallet/v1/pending_approvals');
+        if (x.status !== 200) { const e = new Error(`pending approvals read failed: HTTP ${x.status}`); e.status = x.status; throw e; }
+        return x;
+      }, retryOpts);
       return r.body.approvals ?? [];
     },
     request: (auth, id) => transport(auth, 'GET', `/wallet/v1/requests/${id}`),

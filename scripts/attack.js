@@ -166,11 +166,13 @@ await runCase('A6', 'phone mints a sub-key: it must be an empty, separate wallet
   return (ok ? PASS : FAIL)(`mint HTTP ${mint.status}; sub-key account ${String(acct).slice(0, 10)}… ≠ pocket ${E.pocketAccount.slice(0, 10)}…; sub confidential balance ${bal}; pocket balance unchanged ${pocketAfter}`);
 });
 await runCase('A7', 'phone tries to read "the reserve" with the pocket key', async () => {
+  const before = await snap(E); // read from HOME (the reserve key), for comparison only: the phone never sees this
   const r = await E.ol.transport(E.pocketAuth, 'GET', '/wallet/v1/confidential/balance');
   const bal = BigInt(r.body?.balances?.find((b) => b.token === USDC_TOKEN)?.balance ?? '0'), acct = r.body?.account_id;
   const s = await snap(E);
-  const ok = r.status === 200 && bal === s.pocket && (!acct || acct !== E.reserveAccount) && s.reserve !== s.pocket;
-  return (ok ? PASS : FAIL)(`pocket key sees its own account ${String(acct).slice(0, 10)}… and balance ${bal}; the reserve (${s.reserve}) is not reachable with it`);
+  const ok = r.status === 200 && bal === s.pocket && (!acct || acct !== E.reserveAccount) && s.reserve !== s.pocket && s.reserve === before.reserve;
+  const usd = (m) => (Number(m) / 1e6).toFixed(2);
+  return (ok ? PASS : FAIL)(`pocket key sees only its own account ${String(acct).slice(0, 10)}… and balance ${usd(bal)} USDC | reserve balance (read from HOME with the reserve key, for comparison only; the phone never receives it): ${usd(s.reserve)} USDC, ${s.reserve === before.reserve ? 'unchanged' : 'CHANGED'}`);
 });
 await runCase('A8', 'phone routes with a missing or wrong key', async () => {
   const bodies = []; let ok = true;

@@ -2,15 +2,16 @@
 // amount to show: the phone API never returns one, and nothing in this file reads one. test/phone-privacy.test.js checks.
 import React, { useRef, useState } from 'react';
 import { plain, usePoll } from './api.js';
+import { Ico, Wallet, Split as SplitIco, Send as SendIco, ReceiptText } from './icons.jsx';
 import { Split, Tiles, BillTile, Refusal, usdc } from './parts.jsx';
 import { SLOTS, usePocketMotion, useFlipIds } from './motion.js';
 
 export function PhoneView({ status, pocket, ceiling, sendLimit, note, bills, flipIds, split, tiles, res, to, setTo, amt, setAmt, sending, onSend, onPay }) {
   return (
     <>
-      <section className="room emerald">
+      <section className="room teal">
         <div className="inner">
-          <h1 className="label">Pocket</h1>
+          <h1 className="label"><Ico as={Wallet} /> Pocket</h1>
           {status === 'ok' && <>
             <p className="amount mono" data-pocket-amount>{usdc(pocket)}<span className="unit"> USDC</span></p>
             <Tiles filled={tiles.filled} from={tiles.from} slots={SLOTS} play={tiles.play} />
@@ -23,15 +24,15 @@ export function PhoneView({ status, pocket, ceiling, sendLimit, note, bills, fli
 
       <section className="room paper">
         <div className="inner">
-          <h2>Payday</h2>
+          <h2><Ico as={SplitIco} /> Payday</h2>
           <p className="muted">Money arrives as one line. Your pocket takes its share; everything else is Protected.</p>
           <Split audience="phone" pocketShare={split.share} play={split.play} />
         </div>
       </section>
 
-      <section className="room cobalt">
+      <section className="room mist">
         <div className="inner">
-          <h2>Send</h2>
+          <h2><Ico as={SendIco} /> Send</h2>
           <div className="form">
             <label>Recipient NEAR account<input value={to} onChange={(e) => setTo(e.target.value)} placeholder="name.near" /></label>
             <label>Amount (USDC)<input className="mono" value={amt} onChange={(e) => setAmt(e.target.value)} inputMode="decimal" /></label>
@@ -42,9 +43,9 @@ export function PhoneView({ status, pocket, ceiling, sendLimit, note, bills, fli
         </div>
       </section>
 
-      <section className="room ink">
+      <section className="room teal">
         <div className="inner">
-          <h2>Bills</h2>
+          <h2><Ico as={ReceiptText} /> Bills</h2>
           {(bills ?? []).length === 0 && <p className="muted">No pre-approved bills.</p>}
           <div className="bills">
             {(bills ?? []).map((b) => <BillTile key={b.id} bill={b} flip={flipIds.has(b.id)} onPay={onPay} />)}
@@ -68,7 +69,7 @@ export function Phone() {
   const flipIds = useFlipIds(bills?.body?.bills);
   const seq = useRef(0);
 
-  if (!key) return <section className="room emerald"><div className="inner"><h1 className="label">Pocket</h1><p className="amount-mid">Not paired</p><p>This phone is not paired. On your laptop, open Home and choose Pair phone, then scan the QR code.</p></div></section>;
+  if (!key) return <section className="room teal"><div className="inner"><h1 className="label"><Ico as={Wallet} /> Pocket</h1><p className="amount-mid">Not paired</p><p>This phone is not paired. On your laptop, open Home and choose Pair phone, then scan the QR code.</p></div></section>;
   const send = async () => { setSending(true); setRes(null); const r = await plain('/api/phone/send', { method: 'POST', headers, body: { to, amountUsdc: Number(amt) } }); setRes({ ...r, amount: Number(amt).toFixed(2), play: ++seq.current }); setSending(false); reload(); };
   const payBill = async (id) => { const r = await plain(`/api/phone/bills/${id}/pay`, { method: 'POST', body: {} }); setRes({ ...r, amount: null, play: ++seq.current }); reloadBills(); reload(); };
   const status = s?.status === 200 ? 'ok' : s ? 'unreadable' : 'loading';

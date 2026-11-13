@@ -12,11 +12,12 @@ export const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => 
 // [label, text token, background token]
 export const PAIRS = [
   ['Text on paper', 'on-paper', 'paper'], ['Muted on paper', 'on-paper-muted', 'paper'],
-  ['Text on cobalt', 'on-cobalt', 'cobalt'], ['Muted on cobalt', 'on-cobalt-muted', 'cobalt'],
-  ['Text on emerald', 'on-emerald', 'emerald'], ['Muted on emerald', 'on-emerald-muted', 'emerald'],
-  ['Text on ink', 'on-ink', 'ink'], ['Muted on ink', 'on-ink-muted', 'ink'],
-  ['Refusal slab text', 'on-refusal', 'refusal'], ['Blocked row text (red on paper)', 'refusal', 'paper'],
-  ['Button on cobalt room (cobalt on paper)', 'cobalt', 'paper'], ['Button on emerald room (emerald on paper)', 'emerald', 'paper'], ['Button on ink room (ink on paper)', 'ink', 'paper'],
+  ['Text on mist (light teal)', 'on-mist', 'mist'], ['Muted on mist', 'on-mist-muted', 'mist'],
+  ['Text on teal', 'on-teal', 'teal'], ['Muted on teal', 'on-teal-muted', 'teal'], ['Aqua highlight on teal', 'aqua', 'teal'],
+  ['Text on aqua', 'on-aqua', 'aqua'], ['Muted on aqua', 'on-aqua-muted', 'aqua'],
+  ['Teal on paper (outlines, accents)', 'teal', 'paper'], ['Teal on mist', 'teal', 'mist'],
+  ['Primary button: paper on teal', 'on-teal', 'teal'], ['Button in a teal room: ink on aqua', 'ink', 'aqua'],
+  ['Refusal slab text', 'on-refusal', 'refusal'], ['Blocked row text (red on paper)', 'refusal', 'paper'], ['Blocked row text (red on mist)', 'refusal', 'mist'],
 ];
 export const rows = () => PAIRS.map(([label, fg, bg]) => ({ label, fg: resolve(fg), bg: resolve(bg), ratio: ratio(resolve(fg), resolve(bg)) }));
 

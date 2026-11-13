@@ -1,4 +1,5 @@
 import React from 'react';
+import { Ico, Wallet, Lock } from './icons.jsx';
 
 export const usdc = (micro) => (Number(micro) / 1e6).toFixed(2);
 
@@ -17,11 +18,11 @@ export function Split({ audience, incoming, pocketShare, protectedAmount, play =
       <div className="split-stem" />
       <div className="split-fork">
         <div className="split-pocket" data-pocket>
-          <span className="split-name">Pocket</span>
+          <span className="split-name"><Ico as={Wallet} />Pocket</span>
           {pocketShare != null && <b className="mono split-amt">+{usdc(pocketShare)}</b>}
         </div>
         <div className="split-protected" data-protected>
-          <span className="split-name">Protected</span>
+          <span className="split-name"><Ico as={Lock} />Protected</span>
           {showAmounts && protectedAmount != null && <b className="mono split-amt">+{usdc(protectedAmount)}</b>}
         </div>
       </div>
