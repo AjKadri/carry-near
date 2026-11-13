@@ -1,0 +1,21 @@
+{
+  "test": "T3",
+  "ran_at": "2026-11-09T16:00:19.457Z",
+  "base": "https://api.outlayer.ai",
+  "results": [
+    {
+      "test": "T3",
+      "name": "pocket added <= daily cap after 5 concurrent top-ups",
+      "expect": "allow",
+      "outcome": "allow",
+      "ok": true,
+      "status": 200,
+      "ms": 0,
+      "body": {
+        "allowed": 2,
+        "added": "80000000000000000000000",
+        "cap": "100000000000000000000000"
+      }
+    }
+  ]
+}

@@ -1,0 +1,85 @@
+{
+  "dry": {
+    "amount_out": "35000000",
+    "min_amount_out": "34650000",
+    "time_estimate_seconds": 10
+  },
+  "quote": {
+    "quote": {
+      "amountIn": "35000000",
+      "amountInFormatted": "35.0",
+      "amountInUsd": "34.984040000000",
+      "minAmountIn": "35000000",
+      "amountOut": "35000000",
+      "amountOutFormatted": "35.0",
+      "amountOutUsd": "34.984040000000",
+      "minAmountOut": "34650000",
+      "timeEstimate": 10,
+      "refundFee": "0",
+      "withdrawFee": "0"
+    },
+    "quoteRequest": {
+      "dry": true,
+      "depositMode": "SIMPLE",
+      "swapType": "EXACT_INPUT",
+      "slippageTolerance": 100,
+      "originAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+      "depositType": "INTENTS",
+      "destinationAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+      "amount": "35000000",
+      "refundTo": "5f4c49dc58b84666198f35167a917b6d1f927cd7cded1ba7dc979dbf640b6263",
+      "refundType": "INTENTS",
+      "recipient": "def6a409190c61b153677c77f6eb5dca0ef0f4e812ea6977e926c84f221413ba",
+      "recipientType": "DESTINATION_CHAIN",
+      "deadline": "2026-11-10T11:53:21.837Z",
+      "confidentiality": "public",
+      "quoteWaitingTimeMs": 0,
+      "insured": false,
+      "appFees": []
+    },
+    "signature": "ed25519:Sd3ypGGSnro7HgioY4e4xiApwthQAdULCxmUUv85jmRAzWu68mjTEgSyWHN84zWtvDiuAZEupjbke7YR356RyTx",
+    "timestamp": "2026-11-10T10:53:24.521Z",
+    "correlationId": "823bac41-e345-4a55-8872-9ff5e8980455"
+  },
+  "status": [
+    {
+      "depositAddress": "5HqqvMpz9fePTtYwKq5htL3idNp2C8mhHMVnmkPT3bLt",
+      "http": 404,
+      "error": "Deposit address 5HqqvMpz9fePTtYwKq5htL3idNp2C8mhHMVnmkPT3bLt not found"
+    },
+    {
+      "depositAddress": "H5Ew1fzkdcJvFUVUCxRk7HWpNimHsbPiGPecybzEd527",
+      "http": 200,
+      "status": "SUCCESS",
+      "nearTxHashes": [
+        "55xiL5A25mEQStBVKkJzyN2hJuhzTx6xtyBhCeLAgWHv",
+        "68XiTLAhrtWCXgaapw7aUvjaUXcJAcxzUTCpsQvFbQ5L"
+      ],
+      "originChainTxHashes": [
+        {
+          "hash": "4bTYcp4JTA7RvHkZg6AYtFXa9unKLW9Ri66ZgyVjY5E2jkRnNzLmJ4UfpF9uxAQhvQvErVgNqgcRcu4zVczg6Hvr",
+          "explorerUrl": ""
+        }
+      ],
+      "destinationChainTxHashes": [],
+      "amountOut": "999798"
+    },
+    {
+      "depositAddress": "veRqtUsbbiHXSpx6Q63wrHC56UktJ8UFa6HbMjWJrNX",
+      "http": 200,
+      "status": "SUCCESS",
+      "nearTxHashes": [
+        "C3RUoNGFYVTKACk2N5YFBbVAMxbRxBAGQQkpxsuAHuK9",
+        "GxwbuCj2JeXLnaGsezoRRhMdiBvYHUparLMpALgqPBZ7"
+      ],
+      "originChainTxHashes": [
+        {
+          "hash": "SrJtMoxzNTDjY6mHUzi6HyGHBgKdJvbuiEeM55CsBCKoVBtxwgY19fknG9ZCNuXPhetqrK4yKwUn2qx4uGyCDZ1",
+          "explorerUrl": ""
+        }
+      ],
+      "destinationChainTxHashes": [],
+      "amountOut": "999798"
+    }
+  ]
+}

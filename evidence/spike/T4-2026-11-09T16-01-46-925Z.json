@@ -1,0 +1,60 @@
+{
+  "test": "T4",
+  "ran_at": "2026-11-09T16:01:46.928Z",
+  "base": "https://api.outlayer.ai",
+  "results": [
+    {
+      "test": "T4",
+      "name": "altered recipient (1 char)",
+      "expect": "refuse",
+      "outcome": "refuse",
+      "ok": true,
+      "status": 403,
+      "ms": 1614,
+      "body": {
+        "error": "policy_denied",
+        "message": "Address 'd7041ab1063b3f017ae4d43857b225c2897b0d39682cbd2048c539a04b4805aa' is not in whitelist"
+      }
+    },
+    {
+      "test": "T4",
+      "name": "altered amount (+1 yocto) [policy only]",
+      "expect": "refuse",
+      "outcome": "allow",
+      "ok": false,
+      "status": 200,
+      "ms": 2985,
+      "body": {
+        "request_id": "e6592f83-95d5-48b7-8379-38071b110bea",
+        "status": "success",
+        "tx_hash": "3AcDgoBhVxzxvFH2EzBn9gjMnLscsLqpK1CgEbNPRtzb"
+      }
+    },
+    {
+      "test": "T4",
+      "name": "original bill",
+      "expect": "allow",
+      "outcome": "refuse",
+      "ok": false,
+      "status": 403,
+      "ms": 507,
+      "body": {
+        "error": "policy_denied",
+        "message": "Daily limit exceeded for native: 95000000000000000000001 + 15000000000000000000000 > 100000000000000000000000"
+      }
+    },
+    {
+      "test": "T4",
+      "name": "original bill second time [policy only]",
+      "expect": "refuse",
+      "outcome": "refuse",
+      "ok": true,
+      "status": 403,
+      "ms": 352,
+      "body": {
+        "error": "policy_denied",
+        "message": "Daily limit exceeded for native: 95000000000000000000001 + 15000000000000000000000 > 100000000000000000000000"
+      }
+    }
+  ]
+}

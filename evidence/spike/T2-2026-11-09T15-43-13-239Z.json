@@ -1,0 +1,98 @@
+{
+  "test": "T2",
+  "ran_at": "2026-11-09T15:43:13.241Z",
+  "base": "https://api.outlayer.ai",
+  "results": [
+    {
+      "test": "T2",
+      "name": "pocket transfer over per-tx cap",
+      "expect": "refuse",
+      "outcome": "refuse",
+      "ok": true,
+      "status": 403,
+      "ms": 805,
+      "body": {
+        "error": "policy_denied",
+        "message": "Per-transaction limit exceeded for native: 50000000000000000000001 > 50000000000000000000000"
+      }
+    },
+    {
+      "test": "T2",
+      "name": "pocket reads confidential balance",
+      "expect": "refuse",
+      "outcome": "allow",
+      "ok": false,
+      "status": 200,
+      "ms": 690,
+      "body": {
+        "balances": [],
+        "account_id": "def6a409190c61b153677c77f6eb5dca0ef0f4e812ea6977e926c84f221413ba"
+      }
+    },
+    {
+      "test": "T2",
+      "name": "pocket confidential shield",
+      "expect": "refuse",
+      "outcome": "refuse",
+      "ok": true,
+      "status": 403,
+      "ms": 907,
+      "body": {
+        "error": "policy_denied",
+        "message": "Transaction type 'confidential' is not allowed by policy"
+      }
+    },
+    {
+      "test": "T2",
+      "name": "pocket cross-chain withdraw",
+      "expect": "refuse",
+      "outcome": "refuse",
+      "ok": true,
+      "status": 400,
+      "ms": 166,
+      "body": {
+        "error": "bad_request",
+        "message": "Invalid request body: missing field `chain` at line 1 column 56"
+      }
+    },
+    {
+      "test": "T2",
+      "name": "pocket swap",
+      "expect": "refuse",
+      "outcome": "refuse",
+      "ok": true,
+      "status": 400,
+      "ms": 502,
+      "body": {
+        "error": "bad_request",
+        "message": "token_in must be an asset id with a `nep141:`, `nep245:` or `1cs_v1:` prefix (e.g. 'nep141:wrap.near'), got 'wrap.near'"
+      }
+    },
+    {
+      "test": "T2",
+      "name": "pocket deletes wallet",
+      "expect": "refuse",
+      "outcome": "refuse",
+      "ok": true,
+      "status": 400,
+      "ms": 209,
+      "body": {
+        "error": "bad_request",
+        "message": "Invalid request: missing field `beneficiary` at line 1 column 2"
+      }
+    },
+    {
+      "test": "T2",
+      "name": "pocket creates sub-agent key",
+      "expect": "refuse",
+      "outcome": "allow",
+      "ok": false,
+      "status": 200,
+      "ms": 197,
+      "body": {
+        "wallet_id": "7266118e-c65a-a5ed-c02f-bed16c5309fa",
+        "near_account_id": "d51ea7053a75ecea5c96c83c178684b3837d3afe2a58245862d4845e10658d03"
+      }
+    }
+  ]
+}

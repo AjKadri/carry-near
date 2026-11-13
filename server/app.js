@@ -73,7 +73,8 @@ export function createApp(svc) {
 
   // ---------------- public: pairing (phone side)
   app.post('/api/pair/claim', (req, res) => { const r = pairing.claim(req.body?.id, req.body?.secret); res.status(r.ok ? 200 : r.status).json(r.ok ? { code: r.code } : { error: 'cannot pair' }); });
-  app.get('/api/pair/:id/result', (req, res) => { const r = pairing.result(req.params.id, String(req.query.secret ?? '')); res.status(r.status).json(r.body); });
+  // the secret travels in a header, never in the URL, so it cannot end up in an access log, a proxy log or browser history
+  app.get('/api/pair/:id/result', (req, res) => { const r = pairing.result(req.params.id, String(req.get('x-pair-secret') ?? '')); res.status(r.status).json(r.body); });
 
   // ---------------- signed: HOME. The middleware runs first for EVERY /api/home path not handled above.
   const home = express.Router();

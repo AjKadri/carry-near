@@ -108,7 +108,7 @@ test('pairing: laptop starts, phone claims, both see the same code, the phone ge
     // wrong secret
     assert.equal((await t.j(t.pub, '/api/pair/claim', { method: 'POST', body: { id: s.id, secret: 'nope' } })).status, 403);
     // the phone polls before claiming: no credential
-    const early = await t.j(t.pub, `/api/pair/${s.id}/result?secret=${s.secret}`);
+    const early = await t.j(t.pub, `/api/pair/${s.id}/result`, { headers: { 'X-Pair-Secret': s.secret } });
     assert.equal(early.body.pocketKey, undefined);
     const claim = await t.j(t.pub, '/api/pair/claim', { method: 'POST', body: { id: s.id, secret: s.secret } });
     assert.equal(claim.status, 200); assert.match(claim.body.code, /^\d{6}$/);
@@ -116,14 +116,14 @@ test('pairing: laptop starts, phone claims, both see the same code, the phone ge
     const laptop = (await t.hj(`/api/home/pair/${s.id}`)).body;
     assert.equal(laptop.state, 'claimed'); assert.equal(laptop.code, claim.body.code); // the same code on both screens
     // still no credential before the laptop confirms
-    assert.equal((await t.j(t.pub, `/api/pair/${s.id}/result?secret=${s.secret}`)).body.pocketKey, undefined);
+    assert.equal((await t.j(t.pub, `/api/pair/${s.id}/result`, { headers: { 'X-Pair-Secret': s.secret } })).body.pocketKey, undefined);
     // an unsigned confirm does nothing
     assert.equal((await t.j(t.pub, `/api/home/pair/${s.id}/confirm`, { method: 'POST' })).status, 401);
     assert.equal((await t.hj(`/api/home/pair/${s.id}/confirm`, { method: 'POST' })).body.ok, true);
-    const got = await t.j(t.pub, `/api/pair/${s.id}/result?secret=${s.secret}`);
+    const got = await t.j(t.pub, `/api/pair/${s.id}/result`, { headers: { 'X-Pair-Secret': s.secret } });
     assert.equal(got.body.pocketKey, MOCK_POCKET_KEY);
     assert.deepEqual(Object.keys(got.body).sort(), ['pocketAccount', 'pocketKey', 'state']); // nothing else
-    assert.equal((await t.j(t.pub, `/api/pair/${s.id}/result?secret=${s.secret}`)).status, 404); // once only
+    assert.equal((await t.j(t.pub, `/api/pair/${s.id}/result`, { headers: { 'X-Pair-Secret': s.secret } })).status, 404); // once only
     assert.equal(JSON.stringify(t.svc.store.events(100)).includes(MOCK_POCKET_KEY), false);
   } finally { t.close(); }
 });

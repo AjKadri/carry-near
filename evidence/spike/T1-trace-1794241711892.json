@@ -1,0 +1,91 @@
+{
+  "at": "2026-11-09T16:28:28.648Z",
+  "sig": "ppa1Qx1ciR71GxZGGiMzzncwxdGNNGV83cwHDB6KAy992uWzUwQhY1GBALrRyjYBRHx8QoTw17x6xUJBEvUH8xA",
+  "reserve": "785fc784dbe68d42c2a0814efc92c8766e04408dc4d65cb3c6140ecd2ece18b2",
+  "solana": {
+    "status": "success",
+    "time": "2026-11-09T16:11:24.000Z",
+    "signer": "7puyGCiSnh55z3EzWEr8MKDBw9FYH2izq4K4mXPNpcuo",
+    "usdc_changes": [
+      {
+        "owner": "5HqqvMpz9fePTtYwKq5htL3idNp2C8mhHMVnmkPT3bLt",
+        "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+        "change": 1
+      },
+      {
+        "owner": "7puyGCiSnh55z3EzWEr8MKDBw9FYH2izq4K4mXPNpcuo",
+        "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+        "change": -1
+      }
+    ],
+    "memo": []
+  },
+  "confidential_balance": {
+    "balances": [
+      {
+        "token": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+        "balance": "999798"
+      }
+    ],
+    "account_id": "785fc784dbe68d42c2a0814efc92c8766e04408dc4d65cb3c6140ecd2ece18b2"
+  },
+  "/v1/account/785fc784dbe68d42c2a0814efc92c8766e04408dc4d65cb3c6140ecd2ece18b2": {
+    "account": [
+      {
+        "account_id": "785fc784dbe68d42c2a0814efc92c8766e04408dc4d65cb3c6140ecd2ece18b2",
+        "created": {
+          "transaction_hash": "AfJAyHVZFqPKVJd4iwXaVUGbMS6B7BueWTgTqwbdcPbw",
+          "block_timestamp": 1794240542338297300
+        },
+        "deleted": {
+          "transaction_hash": null,
+          "block_timestamp": null
+        },
+        "amount": "50000000000000000000000",
+        "block_hash": "ESU2iiEuTwZupKjmrFChV7zHAiw8D7A7qNoBzYgrkP59",
+        "block_height": "223791895",
+        "locked": "0"
+      }
+    ]
+  },
+  "/v1/account/785fc784dbe68d42c2a0814efc92c8766e04408dc4d65cb3c6140ecd2ece18b2/txns-only?per_page=25": {
+    "txns": [
+      {
+        "id": "5541178247",
+        "signer_account_id": "c300f0edbd75d12126d462dfcfa30c0a28d176473b3379c69457e937753f9b7c",
+        "receiver_account_id": "785fc784dbe68d42c2a0814efc92c8766e04408dc4d65cb3c6140ecd2ece18b2",
+        "transaction_hash": "AfJAyHVZFqPKVJd4iwXaVUGbMS6B7BueWTgTqwbdcPbw",
+        "included_in_block_hash": "7BQqz2m8gcr4jgLZ77AcA7ft8T3ChF2o6dW9GExRbWyv",
+        "block_timestamp": "1794240542338297282",
+        "receipt_conversion_tokens_burnt": "82494768750000000000",
+        "block": {
+          "block_height": 223789866
+        },
+        "actions": [
+          {
+            "action": "TRANSFER",
+            "method": null,
+            "deposit": 5e+22,
+            "fee": 7.03249476875e+21,
+            "args": null
+          }
+        ],
+        "actions_agg": {
+          "deposit": 5e+22
+        },
+        "outcomes": {
+          "status": true
+        },
+        "outcomes_agg": {
+          "transaction_fee": 7.1149895375e+21
+        }
+      }
+    ]
+  },
+  "/v1/account/785fc784dbe68d42c2a0814efc92c8766e04408dc4d65cb3c6140ecd2ece18b2/ft-txns?per_page=25": {
+    "txns": []
+  },
+  "pocket_ft": {
+    "txns": []
+  }
+}

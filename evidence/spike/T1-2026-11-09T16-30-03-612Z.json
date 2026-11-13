@@ -1,0 +1,24 @@
+{
+  "test": "T1",
+  "ran_at": "2026-11-09T16:30:03.612Z",
+  "base": "https://api.outlayer.ai",
+  "results": [
+    {
+      "test": "T1",
+      "name": "confidential withdraw -> pocket (pending_approval expected)",
+      "expect": "pending",
+      "outcome": "pending",
+      "ok": true,
+      "status": 200,
+      "ms": 1278,
+      "body": {
+        "request_id": "9aeba970-6a94-47fe-9bde-0671e1150349",
+        "status": "pending_approval",
+        "approval_id": "6f86eb44-02de-4e92-b52e-3d2ffa7a7326",
+        "required": 1,
+        "approved": 0,
+        "request_hash": "61c72aab3350f9e38f438cc2740501ea18085fb7196ae29327efb36fcc0fa239"
+      }
+    }
+  ]
+}

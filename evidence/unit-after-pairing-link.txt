@@ -1,0 +1,10 @@
+Fri Nov 13 09:00:28 WAT 2026
+✔ engine: a refill resumed after a long pause is refused, no vote, allowance given back (14.630625ms)
+ℹ tests 62
+ℹ suites 0
+ℹ pass 62
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 9024.005709

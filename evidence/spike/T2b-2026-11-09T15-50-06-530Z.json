@@ -1,0 +1,37 @@
+{
+  "test": "T2b",
+  "ran_at": "2026-11-09T15:50:06.531Z",
+  "base": "https://api.outlayer.ai",
+  "results": [
+    {
+      "test": "T2b",
+      "name": "sub-key controls a DIFFERENT account than the pocket",
+      "expect": "allow",
+      "outcome": "allow",
+      "ok": true,
+      "status": 200,
+      "ms": 196,
+      "body": {
+        "wallet_id": "66faa176-dbea-16db-b641-eb9b991dced8",
+        "chain": "near",
+        "address": "faf10c757ee21a74ec75aa7dfea6fb0e5eac2e0531e2f442e29974c5798d063a",
+        "public_key": "[REDACTED]",
+        "asset_account_id": null,
+        "executor_account_id": "faf10c757ee21a74ec75aa7dfea6fb0e5eac2e0531e2f442e29974c5798d063a"
+      }
+    },
+    {
+      "test": "T2b",
+      "name": "sub-key transfers 1 yocto to stranger (should fail: empty, separate wallet)",
+      "expect": "refuse",
+      "outcome": "refuse",
+      "ok": true,
+      "status": 422,
+      "ms": 867,
+      "body": {
+        "error": "chain_refused",
+        "message": "the account faf10c757ee21a74ec75aa7dfea6fb0e5eac2e0531e2f442e29974c5798d063a is not visible on the network, so there is no key to sign with. Most often that means it has never taken part in a transaction. Retrying will not change it — the chain answered, and this is its answer."
+      }
+    }
+  ]
+}

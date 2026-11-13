@@ -12,7 +12,7 @@ Copyright 2026 AjKadri. Licensed under Apache-2.0 (see `LICENSE`).
 - A refill moves min(refill allowance, reserve balance, ceiling headroom) from the reserve, independent of the payment amount after fees.
 - **Pre-approved bill**: stored from the home app; the phone triggers it by id only.
 - **Home authentication = one laptop device key.** On first setup the laptop's browser generates a non-extractable ECDSA P-256 key (WebCrypto, kept in IndexedDB); the server stores only the public key. Setup needs a one-time code printed on the server console. Every request under `/api/home/*` (bills, refill allowance, halt, exit request, pairing, reserve balance, full log) must carry a signature over method, path, body hash, timestamp and a one-use nonce. Wrong signature, a timestamp more than 60 s off, a replayed nonce or a tampered body gets a bare 401, and the attempt is logged as `home_blocked`. The signature check runs before the route table, so nothing unsigned reaches a home route. The phone API has no route that creates a bill, changes an amount, raises the allowance or reads the reserve.
-- **Phone pairing**: the laptop shows a QR and a confirmation code; the phone claims it and shows the same code; only after the laptop user confirms does the phone receive its pocket credential, once. The phone gets nothing else.
+- **Phone pairing**: the laptop shows a QR and a confirmation code; the phone claims it and shows the same code; only after the laptop user confirms does the phone receive its pocket credential, once. The phone gets nothing else. The "pairing link" shown under the QR is the same address as the QR (same session, same one-time secret, same 5-minute expiry); it is shown only on Home, can be claimed once, and issues nothing until the laptop confirms. The secret travels in the URL fragment and an `X-Pair-Secret` header, never in a query string or a log (`test/pairing-link.test.js`).
 - **Design ("Colour rooms")**: flat blocks of cobalt, emerald and ink on a paper base, one colour per section; Archivo (uppercase, heavy, tight) for display and body, JetBrains Mono for amounts and IDs. Every colour, font, size and motion value is in `web/src/tokens.css`; a test fails if a literal colour appears anywhere else. Red is used only for refusals and blocked attempts. Motion explains money: the payday split (one incoming line forks; the pocket's share goes to the pocket, the rest drops into the black "Protected" band, which shows no amount on the phone), a refusal (the amount bounces back with the raw reason), a refill (tiles pop into the pocket) and rent (the bill tile flips to "Paid"). With `prefers-reduced-motion` every screen shows its final state with no animation.
 - **The phone never shows a reserve amount**: not in text, in the DOM, or in any API response the phone view loads. `test/phone-privacy.test.js` fails if it does.
 - **`npm run attack`**: replays 30+ attack cases (phone tries to exceed caps, create or edit a bill, raise the allowance; leaked reserve key; altered bill amount and payee; second and simultaneous bill use; wrong-key, replayed, second and expired approval votes; refills above the allowance or ceiling, while halted or frozen; two triggers for one arrival). One PASS/FAIL line per case with the raw refusal; each refused request is shown still pending with balances unchanged. The recorded output is in `evidence/`. Mock output says it is not mainnet.
@@ -63,14 +63,14 @@ npm run contrast  # WCAG contrast for every text/background pair
 
 | Run | Summary line | File |
 |---|---|---|
-| Newest mock run (12 Nov 2026) | `38 PASS, 0 FAIL, 2 SKIP, 1 INFO` | `evidence/attack-mock-2026-11-12T21-29-18-262Z.txt` |
+| Newest mock run (13 Nov 2026) | `38 PASS, 0 FAIL, 2 SKIP, 1 INFO` | `evidence/attack-mock-2026-11-13T08-00-45-030Z.txt` |
 | Mock run on the deployed VPS code (11 Nov 2026) | `38 PASS, 0 FAIL, 2 SKIP, 1 INFO` | `evidence/attack-mock-deployed-vps-2026-11-11T20-04-48Z.txt` |
 | Live run 1 (11 Nov 2026, mainnet) | `26 PASS, 0 FAIL, 2 SKIP, 1 INFO, 1 FINDING` | `evidence/attack-live-2026-11-11T12-47-16-288Z.txt` |
 | Live run 2, resume (B5, B7, B8) | `3 PASS, 0 FAIL, 0 SKIP, 0 INFO` | `evidence/attack-live-2026-11-11T13-01-32-880Z.txt` |
 | Live run 3 (D7) | `1 PASS, 0 FAIL, 0 SKIP, 0 INFO` | `evidence/attack-live-2026-11-11T13-18-10-036Z.txt` |
 | Live run 4 (C6a-c, H1-H6) | `9 PASS, 0 FAIL, 0 SKIP, 0 INFO` | `evidence/attack-live-2026-11-11T13-24-17-606Z.txt` |
 
-Live runs 1 and 2 together are 29 PASS, 0 FAIL, 1 FINDING; with runs 3 and 4 the live total is 39 PASS, 0 FAIL. Cases skipped live (A9, C6d) are covered by the mock run; A5 (the phone's daily cap) is marked INFO because it needs 20 USDC to run live, and a daily-cap refusal was seen live earlier (see SPIKE notes, T7b). Mock results prove the code paths and refusal logic, not mainnet.
+Live runs 1 and 2 together are 29 PASS, 0 FAIL, 1 FINDING; with runs 3 and 4 the live total is 39 PASS, 0 FAIL. Cases skipped live (A9, C6d) are covered by the mock run; A5 (the phone's daily cap) is marked INFO because it needs 20 USDC to run live, and a daily-cap refusal was seen live earlier (`evidence/SPIKE.md`, section T7b, and its log `evidence/spike/t7.log`). Mock results prove the code paths and refusal logic, not mainnet.
 
 **The D5 finding.** Case D5 votes on an approval that has already expired. OutLayer's vote endpoint accepted the vote (HTTP 200, approval status "approved"). Expiry is enforced later, by the executor: the request then ended "failed" with `Approval expired before execution`, and nothing moved. So OutLayer does not refuse a late vote. Carry therefore refuses to vote on an expired approval, or one older than 5 minutes, itself (`server/guard.js`, `APPROVAL_MAX_AGE_MS`); case D7 shows that refusal live. The run stopped at D5 as planned, and an addendum at the end of the run 1 file corrects the first wording of the finding.
 
@@ -87,9 +87,11 @@ D2  vote by a real full-access key of a non-approver account
 
 ## Mainnet evidence
 
-- A real 1 USDC payment on Solana into the pay-link flow: [Solscan](https://solscan.io/tx/ppa1Qx1ciR71GxZGGiMzzncwxdGNNGV83cwHDB6KAy992uWzUwQhY1GBALrRyjYBRHx8QoTw17x6xUJBEvUH8xA). It settled to the reserve's confidential balance in under 9 minutes (0.999798 USDC after fees).
-- Carry's own live end-to-end run, 11 Nov 2026 11:02-11:03 UTC: payment 0.999798 USDC detected, refill planned, guard approved, approver voted, money in the pocket about 8 seconds after detection, no human tap. A second live refill of 0.03 USDC (OutLayer request `b4d1fe29-1ee7-4e07-a103-f58ce68f65ae`, state success) is in live run 2.
-- **No explorer link for the refills.** The notes and evidence files record the refill request ids and shortened chain hashes only, not full transaction hashes, so I have not linked them rather than guess. Details and sources: `evidence/mainnet-links.md`.
+Everything below is on public chains. Full records, with the file each fact comes from, are in `evidence/mainnet-links.md`. The spike notes are in `evidence/SPIKE.md` and their raw logs in `evidence/spike/`.
+
+- **A real 1 USDC payment on Solana into the pay-link flow:** [Solscan](https://solscan.io/tx/ppa1Qx1ciR71GxZGGiMzzncwxdGNNGV83cwHDB6KAy992uWzUwQhY1GBALrRyjYBRHx8QoTw17x6xUJBEvUH8xA). It settled to the reserve's confidential balance in under 9 minutes (0.999798 USDC after fees).
+- **Carry's own live end-to-end run, 11 Nov 2026 11:02-11:03 UTC:** payment 0.999798 USDC detected, refill planned, guard approved, approver voted, money in the pocket about 8 seconds after detection, no human tap (`evidence/SPIKE.md`, "Live end-to-end B+C"; run log `evidence/spike/live-e2e-2026-11-11.log`). A second live refill of 0.03 USDC (OutLayer request `b4d1fe29-1ee7-4e07-a103-f58ce68f65ae`, state success) is in live run 2.
+- **No explorer link for the refills.** The notes record the refill requests and shortened chain hashes only. I tried to match them on NearBlocks and could not do so with certainty, so no refill is linked and nothing is guessed. The attempt is described in `evidence/mainnet-links.md`.
 
 ## Deployment
 
@@ -111,6 +113,8 @@ A deployment runs at https://carry.ajkadri.dev (Ubuntu VPS, Caddy for HTTPS, sys
 A recovery code for the home key (today, losing the laptop's browser data means re-pairing with `npm run reset-home-key`).
 
 ## Disclosure
+
+`evidence/SPIKE.md` and `evidence/spike/` are copies of the spike notes and logs. Before copying, every file was scanned for API keys, seeds, private keys, `wk_` keys, handoff URLs and every secret value in the project's `.env` files; nothing was found. The server's address was removed from the notes.
 
 Libraries: express, react, react-dom, vite, @vitejs/plugin-react, qrcode, and esbuild (dev only, used by the tests to bundle the web components). Code in this repo is AI-assisted.
 

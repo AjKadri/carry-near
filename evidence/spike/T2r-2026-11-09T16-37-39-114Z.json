@@ -1,0 +1,20 @@
+{
+  "test": "T2r",
+  "ran_at": "2026-11-09T16:37:39.114Z",
+  "base": "https://api.outlayer.ai",
+  "results": [
+    {
+      "test": "T2r",
+      "name": "reserve key alone cannot move confidential funds to a non-whitelisted address",
+      "expect": "refuse",
+      "outcome": "refuse",
+      "ok": true,
+      "status": 403,
+      "ms": 1416,
+      "body": {
+        "error": "policy_denied",
+        "message": "Address 'nearhacka.near' is not in whitelist"
+      }
+    }
+  ]
+}

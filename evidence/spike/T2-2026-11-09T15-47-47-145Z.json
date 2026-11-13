@@ -1,0 +1,98 @@
+{
+  "test": "T2",
+  "ran_at": "2026-11-09T15:47:47.147Z",
+  "base": "https://api.outlayer.ai",
+  "results": [
+    {
+      "test": "T2",
+      "name": "pocket transfer over per-tx cap",
+      "expect": "refuse",
+      "outcome": "refuse",
+      "ok": true,
+      "status": 403,
+      "ms": 886,
+      "body": {
+        "error": "policy_denied",
+        "message": "Per-transaction limit exceeded for native: 50000000000000000000001 > 50000000000000000000000"
+      }
+    },
+    {
+      "test": "T2",
+      "name": "pocket reads its OWN confidential balance [informational]",
+      "expect": "allow",
+      "outcome": "allow",
+      "ok": true,
+      "status": 200,
+      "ms": 390,
+      "body": {
+        "balances": [],
+        "account_id": "def6a409190c61b153677c77f6eb5dca0ef0f4e812ea6977e926c84f221413ba"
+      }
+    },
+    {
+      "test": "T2",
+      "name": "pocket confidential shield",
+      "expect": "refuse",
+      "outcome": "refuse",
+      "ok": true,
+      "status": 403,
+      "ms": 418,
+      "body": {
+        "error": "policy_denied",
+        "message": "Transaction type 'confidential' is not allowed by policy"
+      }
+    },
+    {
+      "test": "T2",
+      "name": "pocket cross-chain withdraw",
+      "expect": "refuse",
+      "outcome": "refuse",
+      "ok": true,
+      "status": 403,
+      "ms": 289,
+      "body": {
+        "error": "policy_denied",
+        "message": "Transaction type 'withdraw' is not allowed by policy"
+      }
+    },
+    {
+      "test": "T2",
+      "name": "pocket swap",
+      "expect": "refuse",
+      "outcome": "refuse",
+      "ok": true,
+      "status": 403,
+      "ms": 366,
+      "body": {
+        "error": "policy_denied",
+        "message": "Transaction type 'swap' is not allowed by policy"
+      }
+    },
+    {
+      "test": "T2",
+      "name": "pocket deletes wallet",
+      "expect": "refuse",
+      "outcome": "refuse",
+      "ok": true,
+      "status": 403,
+      "ms": 313,
+      "body": {
+        "error": "policy_denied",
+        "message": "Transaction type 'delete' is not allowed by policy"
+      }
+    },
+    {
+      "test": "T2",
+      "name": "pocket creates sub-agent key",
+      "expect": "refuse",
+      "outcome": "allow",
+      "ok": false,
+      "status": 200,
+      "ms": 304,
+      "body": {
+        "wallet_id": "7266118e-c65a-a5ed-c02f-bed16c5309fa",
+        "near_account_id": "d51ea7053a75ecea5c96c83c178684b3837d3afe2a58245862d4845e10658d03"
+      }
+    }
+  ]
+}

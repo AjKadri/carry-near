@@ -1,0 +1,20 @@
+{
+  "test": "T1",
+  "ran_at": "2026-11-09T16:22:00.431Z",
+  "base": "https://api.outlayer.ai",
+  "results": [
+    {
+      "test": "T1",
+      "name": "confidential withdraw -> pocket (records approval behaviour)",
+      "expect": "allow",
+      "outcome": "refuse",
+      "ok": false,
+      "status": 403,
+      "ms": 1361,
+      "body": {
+        "error": "policy_denied",
+        "message": "Transaction type 'confidential' is not allowed by policy"
+      }
+    }
+  ]
+}
