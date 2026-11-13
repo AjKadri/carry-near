@@ -5,12 +5,14 @@ import { plain, usePoll } from './api.js';
 import { Split, Tiles, BillTile, Refusal, usdc } from './parts.jsx';
 import { SLOTS, usePocketMotion, useFlipIds } from './motion.js';
 import { Phone } from './phone.jsx';
-import { Ico, Wallet, Split as SplitIco, ReceiptText, LogOut, Smartphone, ArrowDownLeft } from './icons.jsx';
+import { Ico, ShieldCheck, Wallet, Split as SplitIco, ReceiptText, LogOut, Smartphone, ArrowDownLeft } from './icons.jsx';
 import { Protects } from './protects.jsx';
 import { Empty } from './empty.jsx';
 import { HomeSummary } from './home-summary.jsx';
 import { ActivityPanel } from './activity.jsx';
 
+// The stored id is the name as a slug (lower case letters, digits, dashes): "Rent" -> rent, "Car insurance" -> car-insurance.
+export const billId = (name) => String(name ?? '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
 const Msg = ({ msg, where }) => msg?.where !== where ? null : msg.ok ? <p className="mono wrap" role="status">{msg.text}</p> : <Refusal status={msg.status} body={msg.body} play={msg.status} subject="the reserve" />;
 const Refused = ({ head = 'Refused', children }) => <div className="refusal-slab" role="alert"><b className="refusal-head">{head}</b>{children}</div>;
 
@@ -35,9 +37,10 @@ function Pay({ handle }) {
   return (
     <>
     <section className="room teal fill">
-      <div className="inner">
+      <div className="inner two">
+       <div className="pay-main">
         <p className="label">Pay link</p>
-        <h1>Pay {handle}</h1>
+        <h1>Pay {info?.body?.payee ?? handle}</h1>
         <p className="lede">Pay with USDC on Solana. Enter an amount and your own Solana address (used only to return the payment if it fails).</p>
         {!quote && (
           <div className="form">
@@ -56,6 +59,16 @@ function Pay({ handle }) {
             {mode?.body?.mode === 'mock' && st === 'PENDING_DEPOSIT' && <p><button className="ghost" onClick={async () => { const r = await plain('/api/mock/pay', { method: 'POST', body: { address: quote.address } }); setMockMsg(r.body?.ok ? 'simulated' : 'failed'); }}>Mock: simulate this payment</button> <span className="mono">{mockMsg}</span></p>}
           </div>
         )}
+       </div>
+       <aside className="card" aria-label="Payment summary">
+        <p className="label"><Ico as={ShieldCheck} /> Payment summary</p>
+        <dl className="facts">
+          <dt>Paying</dt><dd><b>{info?.body?.payee ?? handle}</b></dd>
+          <dt>You send</dt><dd className="mono">{quote ? `${usdc(quote.amountIn)} USDC` : `${Number(amount) > 0 ? Number(amount).toFixed(2) : '–'} USDC`}</dd>
+          <dt>Arrives after fees</dt><dd className="mono">{quote?.amountOut ? `about ${usdc(quote.amountOut)} USDC` : 'shown once you get a payment address'}</dd>
+        </dl>
+        <p className="card-note">Your payment lands in a protected account. Only a small share reaches their phone.</p>
+       </aside>
       </div>
     </section>
     <Protects />
@@ -183,8 +196,8 @@ function paydayFrom(events) {
 function HomeApp({ onUnrecognised }) {
   const [s, reloadS] = usePoll(() => signedFetch('/api/home/state'), [], 2000);
   const [log, reloadLog] = usePoll(() => signedFetch('/api/home/log'), [], 2000);
-  const [allow, setAllow] = useState('40');
-  const [bill, setBill] = useState({ id: 'rent', label: 'Rent', payee: '', amountUsdc: '15', expiresAt: '' });
+  const [allow, setAllow] = useState('');
+  const [bill, setBill] = useState({ name: '', payee: '', amountUsdc: '15', expiresAt: '' });
   const [exitAmt, setExitAmt] = useState('1');
   const [mode] = usePoll(() => plain('/api/mode'), [], 60000);
   const [msg, setMsg] = useState(null);
@@ -241,8 +254,8 @@ function HomeApp({ onUnrecognised }) {
               <p className="muted">Refills left: <b className="mono">{usdc(st.allowance)}</b> USDC</p>
             </>}
             <div className="form inline">
-              <label>Authorise total refills (USDC)<input className="mono" value={allow} onChange={(e) => setAllow(e.target.value)} /></label>
-              <button className="action" onClick={() => act('/api/home/allowance', { method: 'POST', body: { totalUsdc: Number(allow) } }, (b) => `Phone allowance set to ${usdc(b.allowance)} USDC.`)}>Set</button>
+              <label>Authorise total refills (USDC)<input className="mono" value={allow} onChange={(e) => setAllow(e.target.value)} inputMode="decimal" placeholder={st?.allowance === undefined ? '' : `${usdc(st.allowance)} now`} /></label>
+              <button className="action" disabled={allow.trim() === '' || !Number.isFinite(Number(allow))} onClick={() => act('/api/home/allowance', { method: 'POST', body: { totalUsdc: Number(allow) } }, (b) => `Phone allowance set to ${usdc(b.allowance)} USDC.`)}>Set</button>
             </div>
             <Msg msg={msg} where="/api/home/allowance" />
           </div>
@@ -255,11 +268,11 @@ function HomeApp({ onUnrecognised }) {
           <div className="stack">
             <h2><Ico as={ReceiptText} /> Pre-approved bill</h2>
             <div className="form">
-              <label>Id<input className="mono" value={bill.id} onChange={(e) => setBill({ ...bill, id: e.target.value })} /></label>
+              <label>Name<input value={bill.name} onChange={(e) => setBill({ ...bill, name: e.target.value })} placeholder="Rent" /></label>
               <label>Payee account<input className="mono" value={bill.payee} onChange={(e) => setBill({ ...bill, payee: e.target.value })} placeholder="payee account" /></label>
               <label>Amount (USDC)<input className="mono" value={bill.amountUsdc} onChange={(e) => setBill({ ...bill, amountUsdc: e.target.value })} /></label>
               <label>Expires (ISO date)<input className="mono" value={bill.expiresAt} onChange={(e) => setBill({ ...bill, expiresAt: e.target.value })} placeholder="2030-01-01T00:00:00Z" /></label>
-              <button className="action" onClick={() => act('/api/home/bills', { method: 'POST', body: { ...bill, label: bill.label || bill.id, amountUsdc: Number(bill.amountUsdc), expiresAt: new Date(bill.expiresAt).toISOString() } }, () => 'Bill saved.')}>Save bill</button>
+              <button className="action" disabled={!billId(bill.name)} onClick={() => act('/api/home/bills', { method: 'POST', body: { id: billId(bill.name), label: bill.name.trim(), payee: bill.payee, amountUsdc: Number(bill.amountUsdc), expiresAt: new Date(bill.expiresAt).toISOString() } }, () => 'Bill saved.')}>Save bill</button>
             </div>
             <Msg msg={msg} where="/api/home/bills" />
           </div>
@@ -284,7 +297,7 @@ function HomeApp({ onUnrecognised }) {
         </div>
       </section>
 
-      <ActivityPanel events={events} />
+      <ActivityPanel events={events} wallets={st?.wallets} />
     </>
   );
 }

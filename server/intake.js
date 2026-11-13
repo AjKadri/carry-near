@@ -7,11 +7,11 @@ const DEADLINE_MS = 72 * 3600e3;
 const REISSUE_MARGIN_MS = 12 * 3600e3;   // an address with less than this left is not handed out again
 const SOL_ADDR = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 
-export function makeIntake({ store, oc, reserveAccount, handle, now = Date.now, maxOpen = 50 }) {
+export function makeIntake({ store, oc, reserveAccount, handle, payeeName = handle, now = Date.now, maxOpen = 50 }) {
   const hits = new Map(); // ip -> [timestamps]; quote rate limit
   const intake = {
     handle,
-    info: () => ({ handle, asset: 'USDC on Solana', min: MIN_PAY, max: MAX_PAY }),
+    info: () => ({ handle, payee: payeeName, asset: 'USDC on Solana', min: MIN_PAY, max: MAX_PAY }),
     async quote({ amountUsdc, refundTo, ip = 'local' }) {
       const amountIn = Math.round(Number(amountUsdc) * 1e6);
       if (!Number.isFinite(amountIn) || amountIn < MIN_PAY || amountIn > MAX_PAY) throw Object.assign(new Error(`amount must be between ${MIN_PAY / 1e6} and ${MAX_PAY / 1e6} USDC`), { status: 400 });
@@ -60,6 +60,6 @@ export function makeIntake({ store, oc, reserveAccount, handle, now = Date.now, 
       return arrivals;
     },
   };
-  const view = (a) => ({ address: a.address, amountIn: a.amount_in, deadline: a.deadline, status: a.status });
+  const view = (a) => ({ address: a.address, amountIn: a.amount_in, amountOut: a.amount_out, deadline: a.deadline, status: a.status });
   return intake;
 }

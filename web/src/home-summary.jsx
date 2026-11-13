@@ -17,7 +17,6 @@ export function HomeSummary({ st, children }) {
           <p className="protected-line" data-protected-line><Ico as={Lock} /> Protected: <b className="mono">{usdc(st.reserve)} USDC</b> · hidden from your phone</p>
         </>}
         {children}
-        {st?.wallets && <p className="muted mono small">Wallets at start: {st.wallets}</p>}
       </div>
     </section>
   );

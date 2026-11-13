@@ -5,7 +5,7 @@ import { usdc, explainRefusal } from './parts.jsx';
 import { Empty } from './empty.jsx';
 
 const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
-const why = (d) => cap(explainRefusal(d.http ?? 0, d.raw ?? d).replace(/^Blocked:? ?/, ''));
+const why = (d, subject) => cap(explainRefusal(d.http ?? 0, d.raw ?? d, subject).replace(/^Blocked:? ?/, ''));
 const short = (s, n = 14) => (String(s ?? '').length > n ? `${String(s).slice(0, n)}…` : String(s ?? ''));
 const BLOCKED = {
   missing_or_malformed_headers: ['unsigned request', 'unsigned requests'],
@@ -32,7 +32,7 @@ export function describe(e) {
     case 'phone_send': return { tab: 'money', icon: Send, text: `Phone sent${amt} to ${short(d.to)}` };
     case 'phone_send_refused': return { tab: 'money', icon: ShieldAlert, blocked: true, text: `Blocked: phone tried to send${amt} to ${short(d.to)}. ${why(d)}` };
     case 'exit_requested': return { tab: 'money', icon: LogOut, text: `Withdrawal requested${amt} to ${short(d.to, 18)}` };
-    case 'exit_refused': return { tab: 'money', icon: ShieldAlert, blocked: true, text: `Blocked: withdrawal${amt}. ${why(d)}` };
+    case 'exit_refused': return { tab: 'money', icon: ShieldAlert, blocked: true, text: `Blocked: withdrawal${amt}. ${why(d, 'the reserve')}` };
     case 'payment_problem': return { tab: 'money', icon: ShieldAlert, blocked: true, text: `Payment problem${amt}` };
     case 'home_blocked': { const [one, many] = BLOCKED[d.reason] ?? [`request refused (${d.reason ?? 'unknown'})`, `requests refused (${d.reason ?? 'unknown'})`];
       return { tab: 'money', icon: ShieldAlert, blocked: true, key: `home_blocked|${d.reason}`, text: `Blocked: ${one} to your home controls`, plural: (n) => `${n} blocked requests: ${many} to your home controls` }; }
@@ -59,6 +59,20 @@ export function describe(e) {
   }
 }
 
+// Refill and bill plumbing (planned, requested, guard decided, approver voted) is folded into the outcome row it led to
+// ("Moved X to your pocket", "Bill paid", "Blocked: ..."): it leaves both tabs and stays visible under that row's "raw".
+const STEPS = new Set(['refill_planned', 'refill_requested', 'guard_decision', 'refill_voted', 'refill_waiting']);
+const OUTCOMES = new Set(['refill_success', 'refill_refused', 'refill_failed', 'refill_error', 'refill_skipped', 'bill_paid', 'bill_refused', 'bill_failed', 'bill_error']);
+export function attachSteps(events) { // events newest first; returns the visible list, outcomes carrying their `steps`
+  const asc = [...events].sort((a, b) => a.id - b.id), pending = [], out = [];
+  for (const e of asc) {
+    if (STEPS.has(e.kind)) { pending.push(e); continue; }
+    if (OUTCOMES.has(e.kind) && pending.length) { out.push({ ...e, steps: pending.splice(0) }); continue; }
+    out.push(e);
+  }
+  return [...out, ...pending].sort((a, b) => b.id - a.id); // steps with no outcome yet (still in flight) stay visible in System
+}
+
 // Fold runs of identical consecutive rows ("3 blocked requests") and keep every raw record for the "raw" view.
 export function foldEvents(events) {
   const out = [];
@@ -66,7 +80,7 @@ export function foldEvents(events) {
     const x = describe(e), key = x.key ?? `${e.kind}|${x.text}`, last = out.at(-1);
     if (last && last.key === key && (x.plural || x.blocked)) { // only noise folds (blocked attempts, warnings); two payments are two rows
       last.n++; last.raws.push(e.detail); last.first = e.ts; }
-    else out.push({ ...x, key, id: e.id, ts: e.ts, first: e.ts, n: 1, raws: [e.detail] });
+    else out.push({ ...x, key, id: e.id, ts: e.ts, first: e.ts, n: 1, raws: [e.steps ? { record: e.detail, steps: e.steps.map((t) => ({ kind: t.kind, at: t.ts, detail: t.detail })) } : e.detail] });
   }
   return out;
 }
@@ -74,10 +88,10 @@ export function foldEvents(events) {
 const when = (ts) => { const d = new Date(ts), today = new Date(); const t = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); return d.toDateString() === today.toDateString() ? t : `${d.toLocaleDateString([], { day: 'numeric', month: 'short' })} ${t}`; };
 export const PAGE = 10;
 
-export function ActivityPanel({ events }) {
+export function ActivityPanel({ events, wallets }) {
   const [tab, setTab] = useState('money');
   const [shown, setShown] = useState(PAGE);
-  const rows = useMemo(() => foldEvents(events.filter((e) => describe(e).tab === tab)), [events, tab]);
+  const rows = useMemo(() => foldEvents(attachSteps(events).filter((e) => describe(e).tab === tab)), [events, tab]);
   const pick = (t) => { setTab(t); setShown(PAGE); };
   return (
     <section className="room paper" aria-labelledby="activity-h">
@@ -87,6 +101,7 @@ export function ActivityPanel({ events }) {
           <button role="tab" className="tab" aria-selected={tab === 'money'} onClick={() => pick('money')}>Money</button>
           <button role="tab" className="tab" aria-selected={tab === 'system'} onClick={() => pick('system')}>System</button>
         </div>
+        {tab === 'system' && wallets && <p className="muted mono small" data-wallets>Wallets at start: {wallets}</p>}
         {events.length === 0
           ? <Empty icon={History} head="Nothing has happened yet." next="Activity appears here as it happens: payments, refills, bills and every blocked attempt." />
           : rows.length === 0

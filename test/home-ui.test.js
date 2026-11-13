@@ -49,6 +49,8 @@ test('activity: plain-language rows, Money vs System, folding of repeated blocke
   assert.equal(b.text, 'Blocked: unsigned request to your home controls'); assert.equal(b.tab, 'money'); assert.equal(b.blocked, true);
   const sent = describe(ev(4, 'phone_send_refused', 11_000_000, { to: 'someone.near', http: 403, raw: { error: 'policy_denied', message: 'Per-transaction limit exceeded for nep141:abc: 11000000 > 10000000' } }, false));
   assert.match(sent.text, /^Blocked: phone tried to send 11\.00 to someone\.near\. This phone can send at most 10\.00 USDC at a time\.$/);
+  const wd = describe(ev(5, 'exit_refused', 500_000_000, { http: 422, raw: { error: { error: 'policy_denied', message: 'Per-transaction limit exceeded for nep141:abc: 500000000 > 20000000' } } }, false));
+  assert.equal(wd.text, 'Blocked: withdrawal 500.00. The reserve can send at most 20.00 USDC at a time.');
   for (const k of ['service_start', 'wallet_state', 'tick_warning', 'tick_error', 'refill_planned']) assert.equal(describe(ev(9, k, null, {})).tab, 'system', k);
   for (const k of ['payment_in', 'refill_success', 'bill_paid', 'exit_requested', 'home_blocked', 'bill_refused']) assert.equal(describe(ev(9, k, 1, {})).tab, 'money', k);
   const rows = foldEvents([ev(7, 'home_blocked', null, { reason: 'missing_or_malformed_headers' }, false), ev(6, 'home_blocked', null, { reason: 'missing_or_malformed_headers' }, false), ev(5, 'home_blocked', null, { reason: 'missing_or_malformed_headers' }, false), ev(4, 'payment_in', 5_000_000)]);
@@ -73,4 +75,53 @@ test('Home source has the empty states and the protects strip; the pay page has 
   for (const t of ['No payments yet.', 'No bills yet.', 'No phone paired yet.']) assert.ok(app.includes(t), t);
   assert.equal((app.match(/<Protects \/>/g) ?? []).length, 2, 'Home and the pay page');
   assert.ok(fs.readFileSync('web/src/activity.jsx', 'utf8').includes('Nothing has happened yet.'));
+});
+
+test('activity: refill steps fold into the "Moved X to your pocket" row and stay under its raw; they leave both tabs', async () => {
+  const { ActivityPanel, attachSteps, foldEvents, describe } = await load('web/src/activity.jsx', 'fold');
+  const evs = [ // newest first, as the log returns them
+    ev(15, 'refill_success', 3_000_000, { request_id: 'r1' }), ev(14, 'refill_voted', 3_000_000, { http: 200 }), ev(13, 'guard_decision', 3_000_000, { approve: true, code: 'REFILL_OK' }),
+    ev(12, 'refill_requested', 3_000_000, { request_id: 'r1' }), ev(11, 'refill_planned', 3_000_000, { key: 'k' }), ev(10, 'payment_in', 5_000_000), ev(9, 'address_issued', 5_000_000, { address: 'a' }),
+  ];
+  const vis = attachSteps(evs);
+  assert.deepEqual(vis.map((e) => e.kind), ['refill_success', 'payment_in', 'address_issued']);
+  assert.equal(vis[0].steps.length, 4);
+  const money = foldEvents(vis.filter((e) => describe(e).tab === 'money'));
+  assert.deepEqual(money.map((r) => r.text), ['Moved 3.00 to your pocket', 'Payment received 5.00']);
+  assert.deepEqual(money[0].raws[0].steps.map((s) => s.kind), ['refill_planned', 'refill_requested', 'guard_decision', 'refill_voted']);
+  assert.equal(describe(ev(9, 'address_issued', 5_000_000)).tab, 'system', 'payment address issued is System');
+  const html = renderToStaticMarkup(React.createElement(ActivityPanel, { events: evs }));
+  assert.equal((html.match(/class="row-text"/g) ?? []).length, 2);
+  assert.equal(/Refill planned|Approver voted|Guard decided/.test(html), false);
+  // a step still in flight (no outcome yet) is not lost: it shows in System
+  const inflight = attachSteps([ev(21, 'refill_requested', 1, {}), ev(20, 'refill_planned', 1, {})]);
+  assert.equal(inflight.length, 2);
+});
+
+test('wallets line is in the System tab, not the Home hero; allowance starts empty with the current value as placeholder; bills use Name', async () => {
+  const sum = fs.readFileSync('web/src/home-summary.jsx', 'utf8');
+  assert.equal(/Wallets at start|st\.wallets/.test(sum), false);
+  const { ActivityPanel } = await load('web/src/activity.jsx', 'wallets');
+  const sys = renderToStaticMarkup(React.createElement(ActivityPanel, { events: [ev(1, 'service_start', null, {})], wallets: 'reserve v2 locked=true frozen=false | pocket v4 locked=true frozen=false' }));
+  assert.equal(sys.includes('data-wallets'), false, 'Money tab (the default) does not show it');
+  const app = fs.readFileSync('web/src/App.jsx', 'utf8');
+  assert.ok(app.includes("useState('')") && app.includes('placeholder={st?.allowance === undefined'), 'allowance input starts empty');
+  assert.equal(app.includes("useState('40')"), false);
+  assert.ok(app.includes('<label>Name<input') && app.includes('placeholder="Rent"') && !app.includes('<label>Id<'));
+  const { billId } = await load('web/src/App.jsx', 'billid').catch(() => ({}));
+  if (billId) { assert.equal(billId('Rent'), 'rent'); assert.equal(billId(' Car insurance! '), 'car-insurance'); assert.match(billId('x'.repeat(80)), /^[a-z0-9][a-z0-9-]{0,39}$/); }
+});
+
+test('pay page: summary card with who is paid (config), amount after fees once quoted, and the protected-account line', async () => {
+  const app = fs.readFileSync('web/src/App.jsx', 'utf8');
+  assert.ok(app.includes('Your payment lands in a protected account. Only a small share reaches their phone.'));
+  assert.ok(app.includes('info?.body?.payee') && app.includes('quote?.amountOut'));
+  const { boot } = await import('./helpers.js');
+  const t = await boot();
+  try {
+    const info = await t.j(t.pub, `/api/pay/${t.config.handle}`);
+    assert.equal(info.body.payee, t.config.payeeName);
+    const q = await t.pay(5);
+    assert.ok(q.amountOut > 4_900_000 && q.amountOut <= 5_000_000, `amountOut ${q.amountOut}`);
+  } finally { t.close(); }
 });

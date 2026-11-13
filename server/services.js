@@ -26,7 +26,7 @@ export function createServices(config = loadConfig(), { now = Date.now, mockOpts
   }
   store.initCeiling(config.phone.ceiling);
   const ol = makeOutLayer(transport, { approver });
-  const intake = makeIntake({ store, oc, reserveAccount, handle: config.handle, now });
+  const intake = makeIntake({ store, oc, reserveAccount, handle: config.handle, payeeName: config.payeeName, now });
   const engine = makeEngine({ store, ol, pocketAccount, now, topUpEveryMs: config.topUpEveryMs, settleOpts });
   const auth = makeHomeAuth({ store, now });
   const pocketCredential = () => ({ pocketKey: config.mode === 'mock' ? MOCK_POCKET_KEY : config.live.pocketKey, pocketAccount });

@@ -10,6 +10,7 @@ export function loadConfig(overrides = {}) {
   return {
     mode,
     handle: env.CARRY_HANDLE || 'demo',
+    payeeName: env.CARRY_PAYEE_NAME || env.CARRY_HANDLE || 'demo', // who the pay page says is being paid
     // One app: pay page, phone API and signed home routes. Loopback by default; a reverse proxy (Caddy) fronts it when deployed.
     port: Number(env.PORT || 8787),
     host: env.HOST || '127.0.0.1',

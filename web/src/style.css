@@ -178,3 +178,12 @@ h2 .ico { width: 0.8em; height: 0.8em; vertical-align: -0.05em; margin-right: 0.
 }
 @keyframes pop { from { transform: scale(var(--pop-from)); } }
 @keyframes flip { from { transform: rotateY(0deg); } }
+
+/* ---------- pay page summary card */
+.card { align-self: start; background: var(--paper); color: var(--on-paper); padding: var(--gutter); margin-top: var(--gap); }
+.card .label { display: flex; align-items: center; gap: 0.1rem; }
+.facts { display: grid; grid-template-columns: auto 1fr; gap: 0.6rem var(--gutter); margin: var(--gap) 0; }
+.facts dt { color: var(--on-paper-muted); font-size: var(--size-small); }
+.facts dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
+.card-note { margin: var(--gap) 0 0; padding-top: var(--gap); border-top: var(--hairline) solid var(--on-paper-muted); }
+@media (min-width: 62rem) { .pay-main + .card { margin-top: calc(var(--size-label) * 2.6); } }
