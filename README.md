@@ -1,8 +1,34 @@
 # Carry
 
-Work in progress for the NEAR Hackathon.
+Robbed, scammed or hacked? They only get what you carry.
 
-Copyright 2026 AjKadri. Licensed under Apache-2.0 (see `LICENSE`).
+Carry splits money the moment it arrives. You get paid through one link, from any chain. A small, capped share goes to the pocket on your phone; the rest lands in a confidential NEAR reserve that the phone cannot see, reach or unlock. Whoever controls the phone (a robber, a scammer coaching you on a call, malware, a phishing approval) can take only what is in the pocket, plus refills you have already authorised from your laptop.
+
+Built at NEAR HACKATHON, November 2026. Tracks: Privacy & Private AI, Real-World Money, AI Security & Defense.
+
+- **Try it in 2 minutes, no keys:** `npm install && npm run demo` (Node 22.13+, simulated money). Steps under "Run it".
+- **Check the claims:** `npm run attack` replays 38 attacks from the phone's side; each prints its raw refusal.
+- **Live instance:** https://carry.ajkadri.dev runs on NEAR mainnet. The pay page is public; Home needs the owner's laptop key.
+- **Demo video:** _link added after recording_
+
+![Laptop Home shows 2.00 USDC protected; the phone shows only its 3.00 pocket.](docs/readme/hero.png)
+
+## Why
+
+- In Nigeria, police officers and robbers have forced people to unlock their phones and transfer crypto on the spot ([Gazette](https://gazettengr.com/?p=411360), [ICIR](https://www.icirnigeria.org/special-report-despite-endsars-protest-police-harassments-persist-use-pos-for-extortion/), [Guardian](https://guardian.ng/?p=2508484)).
+- CertiK verified 72 physical "wrench attacks" on crypto holders in 2025, up 75% ([Decrypt](https://decrypt.co/356604)), and 52 in the first half of 2026 ([Decrypt](https://decrypt.co/374136)).
+- Security guidance favours limits and delays over decoy wallets ([Decrypt](https://decrypt.co/321821/7-ways-protect-yourself-crypto-attacks), [Casa](https://blog.casa.io/can-duress-wallets-stop-bitcoin-attacks/)).
+- Today's phone wallets keep the whole balance one unlock away.
+
+## How Carry compares
+
+| | What it does | Carry's difference |
+|---|---|---|
+| Aegis Vault (NEAR hackathon entry) | Owner presses a panic button to move funds | Protected by default, nothing to press; balance is confidential; runs on mainnet |
+| Bitkey | Phone spends up to a daily limit; hardware above it | Any chain via NEAR Intents; balance is confidential; income is split on arrival |
+| Safe / Argent (limits, delays, guardians) | Spending rules on one chain | Balances stay public there; no automatic split of incoming money |
+
+The protective mechanics (caps, allow-lists, a separate vault) are not new. What is new here is the combination: a hidden balance, a phone that cannot raise its own limits, and protection that starts the moment money arrives, all checked by a re-runnable attack script.
 
 ## What exists today
 
@@ -18,6 +44,16 @@ Copyright 2026 AjKadri. Licensed under Apache-2.0 (see `LICENSE`).
 - **`npm run attack`**: replays 30+ attack cases (phone tries to exceed caps, create or edit a bill, raise the allowance; leaked reserve key; altered bill amount and payee; second and simultaneous bill use; wrong-key, replayed, second and expired approval votes; refills above the allowance or ceiling, while halted or frozen; two triggers for one arrival). One PASS/FAIL line per case with the raw refusal; each refused request is shown still pending with balances unchanged. The recorded output is in `evidence/`. Mock output says it is not mainnet.
 - **Mock mode** (default, no keys): an in-memory stand-in for OutLayer and 1Click that speaks the same request shapes and verifies vote signatures. It proves the code paths, not mainnet.
 - SQLite activity log (`node:sqlite`, Node 22.13+) and a React (Vite) web app styled as the "Colour rooms" design above.
+
+## What you'll see
+
+<table>
+<tr>
+<td width="33%" valign="top"><picture><source media="(prefers-reduced-motion: reduce)" srcset="docs/readme/payday-split-final.png"><img src="docs/readme/payday-split.gif" width="300" alt="Payday split: an incoming 5.00 line forks into POCKET +3.00 and PROTECTED +2.00."></picture><br><sub>Payday: the incoming 5.00 splits into the pocket's 3.00 and the 2.00 that stays Protected.</sub></td>
+<td width="33%" valign="top"><img src="docs/readme/phone-refusal.png" width="300" alt="Phone send panel with a red slab: Blocked, this phone can send at most 10.00 USDC at a time, followed by the raw JSON refusal."><br><sub>The phone tries to send 11.00 and is refused, with the raw reason shown.</sub></td>
+<td width="33%" valign="top"><img src="docs/readme/attack-summary.png" width="300" alt="Terminal output of npm run attack in mock mode ending with 38 PASS, 0 FAIL, 2 SKIP, 1 INFO."><br><sub>The end of <code>npm run attack</code> (mock): 38 PASS, 0 FAIL, 2 SKIP, 1 INFO.</sub></td>
+</tr>
+</table>
 
 ## Run it
 
@@ -63,7 +99,7 @@ npm run contrast  # WCAG contrast for every text/background pair
 
 | Run | Summary line | File |
 |---|---|---|
-| Newest mock run (13 Nov 2026) | `38 PASS, 0 FAIL, 2 SKIP, 1 INFO` | `evidence/attack-mock-2026-11-13T11-23-19-073Z.txt` |
+| Newest mock run (13 Nov 2026) | `38 PASS, 0 FAIL, 2 SKIP, 1 INFO` | `evidence/attack-mock-2026-11-13T11-43-40-530Z.txt` |
 | Mock run on the deployed VPS code (11 Nov 2026) | `38 PASS, 0 FAIL, 2 SKIP, 1 INFO` | `evidence/attack-mock-deployed-vps-2026-11-11T20-04-48Z.txt` |
 | Live run 1 (11 Nov 2026, mainnet) | `26 PASS, 0 FAIL, 2 SKIP, 1 INFO, 1 FINDING` | `evidence/attack-live-2026-11-11T12-47-16-288Z.txt` |
 | Live run 2, resume (B5, B7, B8) | `3 PASS, 0 FAIL, 0 SKIP, 0 INFO` | `evidence/attack-live-2026-11-11T13-01-32-880Z.txt` |
@@ -98,7 +134,7 @@ Everything below is on public chains. Full records, with the file each fact come
 
 A deployment runs at https://carry.ajkadri.dev (Ubuntu VPS, Caddy for HTTPS, systemd service running as a non-root user on a loopback port). The pay page, phone API and signed home routes are public; every home route needs the laptop key signature. Files and steps are in `deploy/`.
 
-## Known limits (so far)
+## Known limits
 
 - The VPS holds the reserve key and the approver key. If the VPS is compromised, the bound is the reserve's locked whitelist and caps: it can only move money to the pocket, the demo landlord and the owner's exit account, at most 20 USDC per transaction and 60 USDC per day. The approver key cannot be rotated once the policy is locked.
 
@@ -117,6 +153,8 @@ A recovery code for the home key (today, losing the laptop's browser data means 
 Set up new reserves without a direct transfer from the owner's account.
 
 ## Disclosure
+
+Copyright 2026 AjKadri. Licensed under Apache-2.0 (see `LICENSE`).
 
 First commit 2026-11-09; all code in this repository, including the OutLayer and 1Click integration, was written during the hackathon window.
 
