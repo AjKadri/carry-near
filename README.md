@@ -13,47 +13,13 @@ Built at NEAR HACKATHON, November 2026. Tracks: Privacy & Private AI, Real-World
 
 ![Laptop Home shows 2.00 USDC protected; the phone shows only its 3.00 pocket.](docs/readme/hero.png)
 
-## Why
-
-- In Nigeria, police officers and robbers have forced people to unlock their phones and transfer crypto on the spot ([Gazette](https://gazettengr.com/?p=411360), [ICIR](https://www.icirnigeria.org/special-report-despite-endsars-protest-police-harassments-persist-use-pos-for-extortion/), [Guardian](https://guardian.ng/?p=2508484)).
-- CertiK verified 72 physical "wrench attacks" on crypto holders in 2025, up 75% ([Decrypt](https://decrypt.co/356604)), and 52 in the first half of 2026 ([Decrypt](https://decrypt.co/374136)).
-- Security guidance favours limits and delays over decoy wallets ([Decrypt](https://decrypt.co/321821/7-ways-protect-yourself-crypto-attacks), [Casa](https://blog.casa.io/can-duress-wallets-stop-bitcoin-attacks/)).
-- Today's phone wallets keep the whole balance one unlock away.
-
-## How Carry compares
-
-| | What it does | Carry's difference |
-|---|---|---|
-| Aegis Vault (NEAR hackathon entry) | Owner presses a panic button to move funds | Protected by default, nothing to press; balance is confidential; runs on mainnet |
-| Bitkey | Phone spends up to a daily limit; hardware above it | Any chain via NEAR Intents; balance is confidential; income is split on arrival |
-| Safe / Argent (limits, delays, guardians) | Spending rules on one chain | Balances stay public there; no automatic split of incoming money |
-
-The protective mechanics (caps, allow-lists, a separate vault) are not new. What is new here is the combination: a hidden balance, a phone that cannot raise its own limits, and protection that starts the moment money arrives, all checked by a re-runnable attack script.
-
-## What exists today
-
-- **Pay link** (`/pay/:handle`): a client enters an amount and their Solana address and gets a 1Click deposit address (USDC on Solana, delivered to the reserve's *confidential* balance, using the 1Click partner key; no reserve key is involved). The service tracks arrivals through 1Click `/v0/status` and logs "payment_in".
-- **Guard** (`server/guard.js`): a pure, unit-tested function that decides which pending OutLayer approvals Carry's approver may vote on. It approves only (a) a confidential transfer of USDC to the pocket that keeps the pocket under the phone ceiling and within the remaining total-refill allowance, and (b) the stored bill (exact payee, exact amount, unused, before expiry). It also refuses to vote on an approval that has expired or is older than 5 minutes (OutLayer's vote endpoint does not refuse late votes). Everything else gets no vote and a logged reason.
-- **Refill engine** (`server/engine.js`): one refill at a time, sized from the pocket's real balance, idempotent per arrival, state kept in SQLite. Each refill is requested, checked by the guard, the allowance is reserved, the approver votes, and the result is confirmed. Every step is logged.
-- A refill moves min(refill allowance, reserve balance, ceiling headroom) from the reserve, independent of the payment amount after fees.
-- **Pre-approved bill**: stored from the home app; the phone triggers it by id only.
-- **Home authentication = one laptop device key.** On first setup the laptop's browser generates a non-extractable ECDSA P-256 key (WebCrypto, kept in IndexedDB); the server stores only the public key. Setup needs a one-time code printed on the server console. Every request under `/api/home/*` (bills, refill allowance, halt, exit request, pairing, reserve balance, full log) must carry a signature over method, path, body hash, timestamp and a one-use nonce. Wrong signature, a timestamp more than 60 s off, a replayed nonce or a tampered body gets a bare 401, and the attempt is logged as `home_blocked`. The signature check runs before the route table, so nothing unsigned reaches a home route. The phone API has no route that creates a bill, changes an amount, raises the allowance or reads the reserve.
-- **Phone pairing**: the laptop shows a QR and a confirmation code; the phone claims it and shows the same code; only after the laptop user confirms does the phone receive its pocket credential, once. The phone gets nothing else. The "pairing link" shown under the QR is the same address as the QR (same session, same one-time secret, same 5-minute expiry); it is shown only on Home, can be claimed once, and issues nothing until the laptop confirms. The secret travels in the URL fragment and an `X-Pair-Secret` header, never in a query string or a log (`test/pairing-link.test.js`).
-- **Design ("Colour rooms")**: flat blocks of deep teal, aqua and light teal on a paper base, one colour per section; Archivo (uppercase, heavy, tight) for display and body, JetBrains Mono for amounts and IDs. Every colour, font, size and motion value is in `web/src/tokens.css`; a test fails if a literal colour appears anywhere else. Red is used only for refusals and blocked attempts. Outline icons come from Lucide (see Disclosure). Home opens with a plain-words summary ("If your phone is lost tonight, at most X USDC is at risk", X = pocket plus refills still authorised) and the Protected amount, both Home-only; the activity log reads in plain language (Money and System tabs, repeated blocked requests folded, raw JSON behind "raw"). Motion explains money: the payday split (one incoming line forks; the pocket's share goes to the pocket, the rest drops into the deep-teal "Protected" band, which shows no amount on the phone), a refusal (the amount bounces back with the raw reason), a refill (tiles pop into the pocket) and rent (the bill tile flips to "Paid"). With `prefers-reduced-motion` every screen shows its final state with no animation.
-- **The phone never shows a reserve amount**: not in text, in the DOM, or in any API response the phone view loads. `test/phone-privacy.test.js` fails if it does.
-- **`npm run attack`**: replays 30+ attack cases (phone tries to exceed caps, create or edit a bill, raise the allowance; leaked reserve key; altered bill amount and payee; second and simultaneous bill use; wrong-key, replayed, second and expired approval votes; refills above the allowance or ceiling, while halted or frozen; two triggers for one arrival). One PASS/FAIL line per case with the raw refusal; each refused request is shown still pending with balances unchanged. The recorded output is in `evidence/`. Mock output says it is not mainnet.
-- **Mock mode** (default, no keys): an in-memory stand-in for OutLayer and 1Click that speaks the same request shapes and verifies vote signatures. It proves the code paths, not mainnet.
-- SQLite activity log (`node:sqlite`, Node 22.13+) and a React (Vite) web app styled as the "Colour rooms" design above.
-
 ## What you'll see
 
-<table>
-<tr>
-<td width="33%" valign="top"><picture><source media="(prefers-reduced-motion: reduce)" srcset="docs/readme/payday-split-final.png"><img src="docs/readme/payday-split.gif" width="300" alt="Payday split: an incoming 5.00 line forks into POCKET +3.00 and PROTECTED +2.00."></picture><br><sub>Payday: the incoming 5.00 splits into the pocket's 3.00 and the 2.00 that stays Protected.</sub></td>
-<td width="33%" valign="top"><img src="docs/readme/phone-refusal.png" width="300" alt="Phone send panel with a red slab: Blocked, this phone can send at most 10.00 USDC at a time, followed by the raw JSON refusal."><br><sub>The phone tries to send 11.00 and is refused, with the raw reason shown.</sub></td>
-<td width="33%" valign="top"><img src="docs/readme/attack-summary.png" width="300" alt="Terminal output of npm run attack in mock mode ending with 38 PASS, 0 FAIL, 2 SKIP, 1 INFO."><br><sub>The end of <code>npm run attack</code> (mock): 38 PASS, 0 FAIL, 2 SKIP, 1 INFO.</sub></td>
-</tr>
-</table>
+<p><picture><source media="(prefers-reduced-motion: reduce)" srcset="docs/readme/payday-split-final.png"><img src="docs/readme/payday-split.gif" width="720" alt="Payday split: an incoming 5.00 line forks into POCKET +3.00 and PROTECTED +2.00."></picture><br><sub>Payday: the incoming 5.00 splits into the pocket's 3.00 and the 2.00 that stays Protected.</sub></p>
+
+<p><img src="docs/readme/phone-refusal.png" width="390" alt="Phone send panel with a red slab: Blocked, this phone can send at most 10.00 USDC at a time, followed by the raw JSON refusal."><br><sub>The phone tries to send 11.00 and is refused, with the raw reason shown.</sub></p>
+
+<p><img src="docs/readme/attack-summary.png" width="720" alt="Terminal output of npm run attack in mock mode ending with 38 PASS, 0 FAIL, 2 SKIP, 1 INFO."><br><sub>The end of <code>npm run attack</code> (mock): 38 PASS, 0 FAIL, 2 SKIP, 1 INFO.</sub></p>
 
 ## Run it
 
@@ -89,9 +55,14 @@ npm run attack    # the attack replay in mock mode
 npm run contrast  # WCAG contrast for every text/background pair
 ```
 
-## Live mode
+## How it works
 
-`CARRY_MODE=live` needs the keys in `.env.example`. It starts with a refill allowance of 0, so nothing moves until the owner sets one on the home page. At start it logs each wallet's policy version and locked state. Live mode has been run against mainnet with the locked reserve and pocket wallets: one end-to-end payment and refill, and four recorded live attack runs (see "Attack results" and "Mainnet evidence" below). The deployment at carry.ajkadri.dev runs in live mode.
+- **Split on arrival.** A client pays one link; the money lands in the reserve, and only a capped share is moved to the phone's pocket ([`server/intake.js`](server/intake.js), [`server/engine.js`](server/engine.js)).
+- **The phone holds only the pocket.** The phone API reads the pocket balance and the bill list, never the reserve, and the phone never shows a reserve amount ([`server/app.js`](server/app.js), [`test/phone-privacy.test.js`](test/phone-privacy.test.js)).
+- **Two caps bound the loss.** A pocket ceiling the guard never lets a refill exceed, and a total refill allowance you set from Home ([`server/guard.js`](server/guard.js)).
+- **Pre-approved bill.** You store a bill (payee, amount, expiry) at Home; the phone can only trigger it by id, so it cannot change who or how much ([`server/engine.js`](server/engine.js), [`server/guard.js`](server/guard.js)).
+- **Signed home controls.** Every Home request must be signed by your laptop's key; unsigned or replayed requests get a bare 401 ([`server/homeauth.js`](server/homeauth.js)).
+- **Every refusal is logged.** Blocked requests, refused refills and refused sends are written to the activity log and read in plain words on Home ([`server/db.js`](server/db.js), [`web/src/activity.jsx`](web/src/activity.jsx)).
 
 ## Attack results
 
@@ -130,9 +101,42 @@ Everything below is on public chains. Full records, with the file each fact come
 - **A refill with a public trail:** the 0.25 USDC refill of 9 Nov 2026 (a withdrawal to the pocket) is two NEAR transactions, [Ctf1jaTE…](https://nearblocks.io/txns/Ctf1jaTEJ7HckmQqcjM2eiMEq12d1dWKoZnk16HohGin) and [76u18TFg…](https://nearblocks.io/txns/76u18TFgXdeqw25LaSdMH1VSPKs6Tqjrq8EoxHnh1pX4). Both are `execute_intents` calls; the second pays 0.245473 USDC to the pocket. The full hashes come from OutLayer's own record of the request, and `evidence/mainnet-links.md` lists what each transaction shows.
 - **The 11 Nov live refills have no on-chain transaction.** They are confidential transfers inside the intents system: OutLayer's records for them carry an `intent_hash` and no chain transaction hash, so there is nothing to link (`evidence/mainnet-links.md`, section 5).
 
+## Why
+
+- In Nigeria, police officers have searched people's phones and forced them to transfer money, including crypto, on the spot ([Gazette](https://gazettengr.com/?p=411360), [ICIR](https://www.icirnigeria.org/special-report-despite-endsars-protest-police-harassments-persist-use-pos-for-extortion/), [Guardian](https://guardian.ng/?p=2508484)).
+- CertiK verified 72 physical "wrench attacks" on crypto holders in 2025, up 75% ([Decrypt](https://decrypt.co/356604)), and 52 in the first half of 2026 ([Decrypt](https://decrypt.co/374136)).
+- Security guidance recommends time delays and multisig, and warns that decoy "duress" wallets are unreliable ([Decrypt](https://decrypt.co/321821/7-ways-protect-yourself-crypto-attacks), [Casa](https://blog.casa.io/can-duress-wallets-stop-bitcoin-attacks/)).
+- Today's phone wallets keep the whole balance one unlock away.
+
+## Prior work
+
+| | What it does | Carry's difference |
+|---|---|---|
+| Bitkey | The phone spends up to a daily transfer limit without the hardware device; a transaction that puts you over the limit needs hardware approval ([Bitkey support](https://support.bitkey.world/hc/en-us/articles/18800065958420-What-happens-if-I-exceed-my-daily-transfer-limit)) | Any chain via NEAR Intents; balance is confidential; income is split on arrival |
+| Safe (spending limits, Delay modifier) | A chosen address can spend a capped amount of a token from a Safe account without the usual signatures, enforced onchain by the allowance module ([Safe help](https://help.safe.global/en/articles/40842-set-up-and-use-spending-limits)); the Zodiac Delay modifier queues transactions behind a cooldown before they can run ([Zodiac Delay](https://github.com/gnosisguild/zodiac-modifier-delay)) | Balances stay public there; no automatic split of incoming money |
+| Argent (guardians) | A transaction is started by the owner and approved by half the guardians, rounded up ([Argent support](https://support.argent.xyz/hc/en-us/articles/360008828238-Guardian-approvals-needed-in-Ethereum-account)) | Balances stay public there; no automatic split of incoming money |
+
+The protective mechanics (caps, allow-lists, a separate vault) are not new. What is new here is the combination: a hidden balance, a phone that cannot raise its own limits, and protection that starts the moment money arrives, all checked by a re-runnable attack script.
+
+## How it's built
+
+- **Pay link and intake** ([`server/intake.js`](server/intake.js), [`server/oneclick.js`](server/oneclick.js); page `/pay/:handle`): a client enters an amount and their Solana address and gets a 1Click deposit address (USDC on Solana, delivered to the reserve's *confidential* balance with the 1Click partner key; no reserve key is involved). Arrivals are tracked through 1Click `/v0/status` and logged as `payment_in`.
+- **Guard** ([`server/guard.js`](server/guard.js), `test/guard.test.js`, `test/voter.test.js`): a pure, unit-tested function that decides which pending OutLayer approvals Carry's approver may vote on. It approves only (a) a confidential USDC transfer to the pocket that keeps it under the phone ceiling and within the remaining total-refill allowance, and (b) the stored bill (exact payee, exact amount, unused, before expiry). It refuses to vote on an approval that has expired or is older than 5 minutes, because OutLayer's vote endpoint does not refuse late votes. Everything else gets no vote and a logged reason.
+- **Refill engine** ([`server/engine.js`](server/engine.js), [`server/outlayer.js`](server/outlayer.js), `test/engine.test.js`, `test/tick-resilience.test.js`): one refill at a time, idempotent per arrival, state in SQLite. Each refill is requested, checked by the guard, reserved against the allowance, voted on and confirmed, with every step logged. A refill moves min(refill allowance, reserve balance, ceiling headroom), independent of the payment amount after fees. Reads retry on temporary 5xx errors and timeouts and log a soft `tick_warning`; idle ticks make no platform reads.
+- **Home controls** ([`server/homeauth.js`](server/homeauth.js), [`web/src/homeKey.js`](web/src/homeKey.js), `test/routes.test.js`): the laptop's browser makes a non-extractable ECDSA P-256 key (WebCrypto, kept in IndexedDB); the server stores only the public key, after a one-time console code. Every request under `/api/home/*` (bills, refill allowance, halt, exit request, pairing, reserve balance, full log) carries a signature over method, path, body hash, timestamp and a one-use nonce. A wrong signature, a timestamp more than 60 s off, a replayed nonce or a tampered body gets a bare 401 and is logged as `home_blocked`. The check runs before the route table, so nothing unsigned reaches a home route, and the phone API has no route that creates a bill, changes an amount, raises the allowance or reads the reserve.
+- **Phone pairing** ([`server/pairing.js`](server/pairing.js), `test/pairing-link.test.js`): the laptop shows a QR and a confirmation code; the phone claims it and shows the same code; only after the laptop user confirms does the phone receive its pocket credential, once, and nothing else. The "pairing link" under the QR is the same address as the QR (same session, same one-time secret, same 5-minute expiry); it is shown only on Home and can be claimed once. The secret travels in the URL fragment and an `X-Pair-Secret` header, never in a query string or a log.
+- **Phone view and privacy** ([`web/src/phone.jsx`](web/src/phone.jsx), `test/phone-privacy.test.js`): the phone never shows a reserve amount, in text, in the DOM or in any API response the phone view loads, and the Protected band carries only its label. The test fails if any of that changes.
+- **Web app and design** (`web/src/`, [`web/src/tokens.css`](web/src/tokens.css)): "Colour rooms", flat blocks of deep teal, aqua and light teal on a paper base, with Archivo for display and body and JetBrains Mono for amounts and IDs. Every colour, font, size and motion value is in `tokens.css`; a test fails if a literal colour appears anywhere else, and red is used only for refusals. Home opens with a plain-words summary ("If your phone is lost tonight, at most X USDC is at risk", X = pocket plus refills still authorised) and the Protected amount, both Home-only; the activity log has Money and System tabs, folds repeated blocked requests and keeps the raw JSON behind "raw". Motion explains money (the payday split, a refusal bouncing back, refill tiles, the bill flipping to "Paid"); with `prefers-reduced-motion` every screen shows its final state.
+- **Attack script and mock mode** ([`scripts/attack.js`](scripts/attack.js), [`server/mock.js`](server/mock.js), `evidence/`): `npm run attack` replays 30+ attack cases (the phone exceeding caps, creating or editing a bill, raising the allowance; a leaked reserve key; an altered bill amount or payee; second and simultaneous bill use; wrong-key, replayed, second and expired votes; refills above the allowance or ceiling, while halted or frozen; two triggers for one arrival), one PASS/FAIL line each with the raw refusal, and shows each refused request still pending with balances unchanged. Mock mode (the default, no keys) is an in-memory stand-in for OutLayer and 1Click that speaks the same request shapes and verifies vote signatures; it proves the code paths, not mainnet.
+- **Storage and stack**: an SQLite activity log (`node:sqlite`, Node 22.13+, [`server/db.js`](server/db.js)) and a React (Vite) web app.
+
 ## Deployment
 
 A deployment runs at https://carry.ajkadri.dev (Ubuntu VPS, Caddy for HTTPS, systemd service running as a non-root user on a loopback port). The pay page, phone API and signed home routes are public; every home route needs the laptop key signature. Files and steps are in `deploy/`.
+
+## Live mode
+
+`CARRY_MODE=live` needs the keys in `.env.example`. It starts with a refill allowance of 0, so nothing moves until the owner sets one on the home page. At start it logs each wallet's policy version and locked state. Live mode has been run against mainnet with the locked reserve and pocket wallets: one end-to-end payment and refill, and four recorded live attack runs (see "Attack results" and "Mainnet evidence" below). The deployment at carry.ajkadri.dev runs in live mode.
 
 ## Known limits
 
