@@ -108,12 +108,17 @@ A deployment runs at https://carry.ajkadri.dev (Ubuntu VPS, Caddy for HTTPS, sys
 - The key cannot be read out, but script running in the Carry page itself (for example through a cross-site scripting bug) could ask the browser to sign requests while the page is open.
 - Whoever can read the server console during first setup can register the home key, so do the first setup before exposing the server.
 - The pay page supports USDC on Solana only.
+- During setup, the reserve's only public transaction was gas sent from the owner's main NEAR account, which links the two accounts. Carry's own flows never touch the reserve on chain.
 
 ## Roadmap (not built)
 
 A recovery code for the home key (today, losing the laptop's browser data means re-pairing with `npm run reset-home-key`).
 
+Set up new reserves without a direct transfer from the owner's account.
+
 ## Disclosure
+
+First commit 2026-11-09; all code in this repository, including the OutLayer and 1Click integration, was written during the hackathon window.
 
 `evidence/SPIKE.md` and `evidence/spike/` are copies of the spike notes and logs. Before copying, every file was scanned for API keys, seeds, private keys, `wk_` keys, handoff URLs and every secret value in the project's `.env` files; nothing was found. The server's address was removed from the notes.
 
