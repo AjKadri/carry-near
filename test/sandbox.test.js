@@ -1,5 +1,6 @@
 // The public sandbox: one mock world per visitor (cookie), isolation, caps, auto setup, reset, and the mock-only guard.
 import test from 'node:test';
+import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import { createSandbox, assertMockOnly, COOKIE } from '../server/sandbox.js';
 import { makeTestDevice } from '../server/homeauth.js';
@@ -189,4 +190,9 @@ test('only recently used worlds are ticked, and one world cannot reach another t
     const s = await t.sb.worldOf(a.cookie.split('=')[1]);
     assert.equal(s.svc.store.events(50).some((e) => e.kind === 'payment_in'), false);
   } finally { t.close(); }
+});
+
+test('the page gets its session cookie with one request before it fires several at once (otherwise each would start its own world)', () => {
+  const main = fs.readFileSync('web/src/main.jsx', 'utf8');
+  assert.ok(main.indexOf("await fetch('/api/mode'") !== -1 && main.indexOf("await fetch('/api/mode'") < main.indexOf('createRoot('), 'main.jsx must await /api/mode before rendering');
 });

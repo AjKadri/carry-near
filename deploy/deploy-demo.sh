@@ -9,7 +9,7 @@ EXPRESS="$(node -p "require('./package-lock.json').packages['node_modules/expres
 ssh "$HOST" 'mkdir -p /opt/carry-demo/web'
 rsync -az --delete --exclude '.env*' server/ "$HOST:/opt/carry-demo/server/"
 rsync -az --delete web/dist/ "$HOST:/opt/carry-demo/web/dist/"
-ssh "$HOST" "cd /opt/carry-demo && printf '%s\n' '{\"name\":\"carry-demo\",\"private\":true,\"type\":\"module\"}' > package.json && npm install --omit=dev --ignore-scripts --no-audit --no-fund express@$EXPRESS >/dev/null && chmod -R go-w /opt/carry-demo"
+ssh "$HOST" "cd /opt/carry-demo && printf '%s\n' '{\"name\":\"carry-demo\",\"private\":true,\"type\":\"module\"}' > package.json && npm install --omit=dev --ignore-scripts --no-audit --no-fund express@$EXPRESS >/dev/null && chmod -R go-w,a+rX /opt/carry-demo"
 scp -q deploy/carry-demo.service "$HOST:/etc/systemd/system/carry-demo.service"
 # SKIP_CADDY=1 deploys the service only (reachable on the VPS loopback), for when the DNS record does not exist yet.
 ssh "$HOST" "SKIP_CADDY=${SKIP_CADDY:-0}; $(cat <<'REMOTE'
@@ -21,7 +21,8 @@ if [ "$SKIP_CADDY" != 1 ] && ! grep -q "^demo.carry.ajkadri.dev" /etc/caddy/Cadd
   systemctl reload caddy
 fi
 systemctl daemon-reload
-systemctl enable --now carry-demo
+systemctl enable carry-demo
+systemctl restart carry-demo
 sleep 2; systemctl is-active carry-demo; curl -s http://127.0.0.1:8798/api/health; echo
 REMOTE
 )"
