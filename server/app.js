@@ -3,6 +3,9 @@ import path from 'node:path';
 import express from 'express';
 import { scrub } from './outlayer.js';
 import { USDC_TOKEN } from './guard.js';
+import { MOCK_LANDLORD } from './mock.js';
+
+const SAMPLE_REFUND = '7puyGCiSnh55z3EzWEr8MKDBw9FYH2izq4K4mXPNpcuo'; // a well-formed Solana address for the sandbox's simulated client payments
 
 const SLUG = /^[a-z0-9][a-z0-9-]{0,39}$/;
 const ACCOUNT = /^([a-z0-9._-]{2,64}|[0-9a-f]{64})$/;
@@ -31,6 +34,7 @@ export function createApp(svc, { sandbox = false, noStatic = false } = {}) {
     mode: config.mode, handle: config.handle, publicUrl: config.publicUrl,
     sandbox, // a public per-visitor mock world (server/sandbox.js)
     landing: config.mode === 'live' && !sandbox, // the live instance shows a small landing page at "/"
+    sample: sandbox ? { landlord: MOCK_LANDLORD, refundTo: SAMPLE_REFUND, rentUsdc: 15 } : undefined, // what the sandbox tour uses
     sandboxUrl: config.sandboxUrl, liveUrl: config.liveUrl, repoUrl: config.repoUrl, videoUrl: config.videoUrl,
   }));
 
@@ -150,6 +154,8 @@ export function createApp(svc, { sandbox = false, noStatic = false } = {}) {
     // Home is set up automatically for this session: the browser still makes its own non-extractable device key and registers it through
     // the normal setup route; only the one-time code is handed out here (it belongs to this visitor's world and nothing else).
     app.get('/api/sandbox/setup-code', (_req, res) => { const code = auth.setupCode(); code ? res.json({ setupCode: code }) : res.status(409).json({ error: 'already set up' }); });
+    // The owner's approval of a withdrawal, simulated: approves a pending exit request in this visitor's own mock OutLayer. Nothing else can be approved this way.
+    app.post('/api/sandbox/approve-withdrawal', (req, res) => { const ok = !!svc.mock?.adminApprove(String(req.body?.requestId ?? '')); res.status(ok ? 200 : 404).json({ ok }); });
     // One click pairs a phone view for this session, through the normal pairing module (start, claim, confirm, result).
     app.post('/api/sandbox/phone', (_req, res) => {
       const s = pairing.start(); if (!s) return res.status(429).json({ error: 'too many open pairing sessions' });

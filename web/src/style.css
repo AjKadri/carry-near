@@ -197,3 +197,13 @@ h2 .ico { width: 0.8em; height: 0.8em; vertical-align: -0.05em; margin-right: 0.
 .landing .links { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; margin: var(--gap) 0 0; padding: 0; list-style: none; }
 .landing .lede { max-width: 40rem; }
 .sandbox-tools { display: flex; flex-wrap: wrap; gap: var(--gap); align-items: center; }
+
+/* The sandbox's guided tour (top of Home) and the phone's hint */
+.tour-list { list-style: none; margin: var(--gap) 0 0; padding: 0; display: grid; gap: var(--gap); }
+.tour-step { display: grid; grid-template-columns: 2.5rem 1fr; gap: var(--gap); align-items: start; }
+.tour-mark { display: inline-flex; align-items: center; justify-content: center; width: 2.5rem; height: 2.5rem; border: var(--rule) solid var(--fg); font-family: var(--font-display); font-weight: var(--weight-display); }
+.tour-step[data-done="true"] .tour-mark { background: var(--teal); color: var(--on-teal); border-color: var(--teal); }
+.tour-body { display: grid; gap: 0.5rem; justify-items: start; }
+.tour-title { font-family: var(--font-display); font-weight: var(--weight-display); text-transform: uppercase; letter-spacing: 0.04em; }
+button.big { min-height: 3.25rem; font-size: 1.05rem; }
+.sandbox-hint { font-weight: var(--weight-strong); margin: 0 0 var(--gap); padding: 0.5rem 0.75rem; border: var(--rule) dashed var(--fg); }

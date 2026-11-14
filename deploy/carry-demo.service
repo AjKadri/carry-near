@@ -8,7 +8,7 @@ Wants=network-online.target
 DynamicUser=yes
 WorkingDirectory=/opt/carry-demo
 # No EnvironmentFile on purpose: the sandbox never sees a key. sandbox-main.js also refuses to start if CARRY_MODE is not exactly "mock" or a live key is in its environment.
-Environment=CARRY_MODE=mock PORT=8798 HOST=127.0.0.1
+Environment=CARRY_MODE=mock PORT=8798 HOST=127.0.0.1 CARRY_TICK_MS=1500
 ExecStart=/usr/bin/node server/sandbox-main.js
 Restart=always
 RestartSec=3

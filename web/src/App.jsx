@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import { loadKey, createKey, clearKey, publicKeySpkiB64, signedFetch, keyStatus, classifyRefusal } from './homeKey.js';
 import { HomeLinkBanner, Unrecognised, forgetWithConfirm } from './gate.jsx';
+import { SandboxTour } from './tour.jsx';
 import { plain, usePoll } from './api.js';
 import { Split, Tiles, BillTile, Refusal, usdc } from './parts.jsx';
 import { SLOTS, usePocketMotion, useFlipIds } from './motion.js';
@@ -26,26 +27,50 @@ function SandboxBanner({ mode }) {
     </div>
   );
 }
-// One click pairs a phone view for this session and opens it in a new tab (the tab is opened first so a pop-up blocker allows it).
-function SandboxTools() {
-  const [busy, setBusy] = useState(false);
-  const open = async () => {
-    setBusy(true);
+// The sandbox tour's actions. Everything is done in place; the ticks come from the session's real events (tour.jsx).
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+function SandboxTourPanel({ events, sample, handle }) {
+  const [busy, setBusy] = useState('');
+  const [note, setNote] = useState('');
+  // A client payment for THIS session: the pay link's normal quote, then the simulated deposit.
+  const simulate = async (amountUsdc) => {
+    const q = await plain(`/api/pay/${handle}/quote`, { method: 'POST', body: { amountUsdc, refundTo: sample.refundTo } });
+    if (q.status !== 200) throw new Error(q.body?.error ?? 'could not start the payment');
+    const p = await plain('/api/mock/pay', { method: 'POST', body: { address: q.body.address } });
+    if (p.status !== 200) throw new Error('could not simulate the payment');
+  };
+  const pay = async () => {
+    setBusy('pay'); setNote('');
+    document.getElementById('payday')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); // so the split plays in view
+    try { await simulate(5); setNote('Payment on its way: watch Payday.'); } catch (e) { setNote(String(e.message ?? e)); }
+    setBusy('');
+  };
+  // One click pairs a phone view for this session and opens it in a new tab (opened first so a pop-up blocker allows it).
+  const phone = async () => {
+    setBusy('phone');
     const w = window.open('about:blank', '_blank');
     const r = await plain('/api/sandbox/phone', { method: 'POST' });
-    if (r.status === 200 && r.body?.pocketKey) { try { localStorage.setItem('carryPocketKey', r.body.pocketKey); } catch { /* private mode */ } if (w) w.location.href = '/phone'; else window.location.assign('/phone'); }
-    else if (w) w.close();
-    setBusy(false);
+    if (r.status === 200 && r.body?.pocketKey) { try { localStorage.setItem('carryPocketKey', r.body.pocketKey); } catch { /* private mode */ } if (w) w.location.href = '/phone'; else window.location.assign('/phone'); setNote('The phone view is open in a new tab.'); }
+    else { if (w) w.close(); setNote('Could not open the phone view.'); }
+    setBusy('');
   };
-  return (
-    <section className="room paper">
-      <div className="inner">
-        <h2><Ico as={Smartphone} /> Sandbox</h2>
-        <p className="lede">Everything here is simulated and private to this browser. Pay yourself from the <a href={`/pay/demo`}>pay link</a> (press "Mock: simulate this payment"), then watch the split. The phone view opens in its own tab, paired to this same demo.</p>
-        <div className="sandbox-tools"><button className="action" onClick={open} disabled={busy}>Open the phone view</button></div>
-      </div>
-    </section>
-  );
+  // The Rent bill needs 15 USDC in the reserve: if it is short, simulate one more client payment first (it shows in Activity like any other).
+  const rent = async () => {
+    setBusy('rent'); setNote('');
+    try {
+      const need = Math.round(sample.rentUsdc * 1e6);
+      const reserve = async () => (await signedFetch('/api/home/state')).body?.reserve ?? 0;
+      if ((await reserve()) < need) {
+        setNote('Adding a 20 USDC client payment so the reserve can cover the rent…');
+        await simulate(20);
+        for (let i = 0; i < 40 && (await reserve()) < need; i++) await sleep(700);
+      }
+      const r = await signedFetch('/api/home/bills', { method: 'POST', body: { id: 'rent', label: 'Rent', payee: sample.landlord, amountUsdc: sample.rentUsdc, expiresAt: '2030-01-01T00:00:00Z' } });
+      setNote(r.status === 200 || r.status === 409 ? 'Rent is saved. Now press Pay on Rent in the phone tab (open it with step 2 if you have not).' : 'Could not save the Rent bill.');
+    } catch (e) { setNote(String(e.message ?? e)); }
+    setBusy('');
+  };
+  return <SandboxTour events={events} busy={busy} note={note} onPay={pay} onPhone={phone} onRent={rent} />;
 }
 
 // The live instance's landing page (path "/"): the tagline, what Carry does, two ways in, and the links.
@@ -133,7 +158,7 @@ function Pay({ handle }) {
             <p className="slab mono wrap">{quote.address}</p>
             <p>Valid until <span className="mono">{new Date(quote.deadline).toLocaleString()}</span>{quote.fee != null && <> · fee about <span className="mono">{exact(quote.fee)} {quote.chain?.symbol}</span></>}{quote.minimum != null && <> · minimum <span className="mono">{exact(quote.minimum)} {quote.chain?.symbol}</span></>}. Send only {quote.chain?.symbol ?? 'USDC'} on {quote.chain?.chain ?? 'Solana'} to this address.</p>
             <p className="status" role="status"><span className="label">Status</span><b>{stText}</b></p>
-            {mode?.body?.mode === 'mock' && st === 'PENDING_DEPOSIT' && <p><button className="ghost" onClick={async () => { const r = await plain('/api/mock/pay', { method: 'POST', body: { address: quote.address } }); setMockMsg(r.body?.ok ? 'simulated' : 'failed'); }}>Mock: simulate this payment</button> <span className="mono">{mockMsg}</span></p>}
+            {mode?.body?.mode === 'mock' && st === 'PENDING_DEPOSIT' && <p><button className="ghost" onClick={async () => { const r = await plain('/api/mock/pay', { method: 'POST', body: { address: quote.address } }); setMockMsg(r.body?.ok ? 'simulated' : 'failed'); }}>{mode?.body?.sandbox ? 'Simulate this payment' : 'Mock: simulate this payment'}</button> <span className="mono">{mockMsg}</span></p>}
           </div>
         )}
        </div>
@@ -316,6 +341,14 @@ function HomeApp({ onUnrecognised }) {
     reloadS(); reloadLog();
   };
   const events = lastLog.current;
+  const sandbox = !!mode?.body?.sandbox;
+  // In the sandbox the owner's approval is simulated too: the request is made the normal way, then approved in this visitor's own mock OutLayer.
+  const withdrawSandbox = async () => {
+    const r = await signedFetch('/api/home/exit', { method: 'POST', body: { amountUsdc: Number(exitAmt) } });
+    if (r.status === 200) { await plain('/api/sandbox/approve-withdrawal', { method: 'POST', body: { requestId: r.body.requestId } }); setMsg({ where: '/api/home/exit', ok: true, text: `Withdrawal of ${Number(exitAmt).toFixed(2)} USDC simulated and approved. It leaves the reserve.` }); }
+    else setMsg({ where: '/api/home/exit', ok: false, status: r.status, body: r.body });
+    reloadS(); reloadLog();
+  };
   const day = paydayFrom(events);
   const [, tiles] = usePocketMotion(st?.reserve !== undefined ? st.pocket : null, st?.ceiling);
   const flipIds = useFlipIds(st?.bills);
@@ -332,24 +365,23 @@ function HomeApp({ onUnrecognised }) {
   const bills = st?.bills ?? [];
   return (
     <>
+      {mode?.body?.sandbox && mode.body.sample && <SandboxTourPanel events={events} sample={mode.body.sample} handle={mode.body.handle} />}
       <HomeLinkBanner problem={problem} />
       <HomeSummary st={st}>
         {st?.halted && <Refused head={st.halted.code}><p>Refills are halted until reviewed. <button className="ghost" onClick={() => act('/api/home/engine/clear-halt', { method: 'POST' }, () => 'Halt cleared. Refills resume on the next cycle.')}>Clear</button></p></Refused>}
       </HomeSummary>
 
-      {mode?.body?.sandbox && <SandboxTools />}
-
       <Protects />
 
       <section className="room mist">
         <div className="inner">
-          <h2><Ico as={SplitIco} /> Payday</h2>
+          <h2 id="payday"><Ico as={SplitIco} /> Payday</h2>
           {day ? <>
             <Split audience="home" incoming={day.incoming} pocketShare={day.settled ? day.pocket : null} protectedAmount={day.settled ? day.protectedAmount : null} play={play}
               note={day.over ? 'The refill was larger than this payment: the pocket was also topped up from what the reserve already held.' : undefined} />
             <p><button className="ghost" onClick={() => setPlay((p) => p + 1)}>Replay</button> {!day.settled && <span className="muted">Waiting for the pocket's share…</span>}</p>
           </> : <Empty icon={ArrowDownLeft} head="No payments yet." next="Share your pay link with a client. When money arrives, the split appears here: one line forking into your pocket and the Protected band.">
-            <p><a href={`/pay/${mode?.body?.handle ?? 'demo'}`}>Open your pay link</a>{mode?.body?.mode === 'mock' && <span className="muted"> · demo: press "Mock: simulate this payment" on that page</span>}</p>
+            <p><a href={`/pay/${mode?.body?.handle ?? 'demo'}`}>Open your pay link</a>{mode?.body?.mode === 'mock' && <span className="muted"> · demo: press "{mode?.body?.sandbox ? 'Simulate this payment' : 'Mock: simulate this payment'}" on that page</span>}</p>
           </Empty>}
         </div>
       </section>
@@ -399,10 +431,10 @@ function HomeApp({ onUnrecognised }) {
           <h2><Ico as={LogOut} /> Withdraw to your exit account</h2>
           <div className="form inline">
             <label>Amount (USDC)<input className="mono" value={exitAmt} onChange={(e) => setExitAmt(e.target.value)} /></label>
-            <button className="action" onClick={() => act('/api/home/exit', { method: 'POST', body: { amountUsdc: Number(exitAmt) } }, (b) => `Withdrawal requested for ${Number(exitAmt).toFixed(2)} USDC: approve it in your OutLayer dashboard (request ${String(b.requestId ?? '').slice(0, 8)}, status ${b.status}).`)}>Request withdrawal</button>
+            <button className="action" onClick={() => (sandbox ? withdrawSandbox() : act('/api/home/exit', { method: 'POST', body: { amountUsdc: Number(exitAmt) } }, (b) => `Withdrawal requested for ${Number(exitAmt).toFixed(2)} USDC: approve it in your OutLayer dashboard (request ${String(b.requestId ?? '').slice(0, 8)}, status ${b.status}).`))}>Request withdrawal</button>
           </div>
           <p>To <code className="mono">{st?.exitAccount}</code></p>
-          <p className="muted">Carry's approver never approves this. You approve it in your OutLayer dashboard.</p>
+          {sandbox ? <p className="muted">In the sandbox, withdrawals are simulated.</p> : <p className="muted">Carry's approver never approves this. You approve it in your OutLayer dashboard.</p>}
           <Msg msg={msg} where="/api/home/exit" />
         </div>
       </section>

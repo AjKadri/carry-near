@@ -129,6 +129,13 @@ export function createMock({ now = Date.now, settleDelayMs = 1500, tweakApproval
     }
     return { status: 404, body: {} };
   };
+  // Sandbox only (never called by the engine): the owner's approval of a withdrawal to the exit account, which Carry's own approver never gives.
+  m.adminApprove = (id) => {
+    const r = reqs.get(id);
+    if (!r || r.role !== 'reserve' || r.flow !== 'withdraw' || r.to !== MOCK_EXIT || !r.approval || r.approval.status !== 'pending') return false;
+    r.approval.status = 'approved'; r.approval.approved = 1; r.status = 'processing'; r.doneAt = now() + settleDelayMs;
+    return true;
+  };
   m.simulateDeposit = (address) => { const q = quotes.get(address); if (!q || q.status !== 'PENDING_DEPOSIT') return false; q.status = 'PROCESSING'; q.successAt = now() + settleDelayMs; return true; };
   return m;
 }

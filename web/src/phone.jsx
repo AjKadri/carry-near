@@ -6,7 +6,7 @@ import { Ico, Wallet, Split as SplitIco, Send as SendIco, ReceiptText } from './
 import { Split, Tiles, BillTile, Refusal, usdc } from './parts.jsx';
 import { SLOTS, usePocketMotion, useFlipIds } from './motion.js';
 
-export function PhoneView({ status, pocket, ceiling, sendLimit, note, bills, flipIds, split, tiles, res, to, setTo, amt, setAmt, sending, onSend, onPay }) {
+export function PhoneView({ status, pocket, ceiling, sendLimit, note, bills, flipIds, split, tiles, res, to, setTo, amt, setAmt, sending, onSend, onPay, hint }) {
   return (
     <>
       <section className="room teal">
@@ -33,6 +33,7 @@ export function PhoneView({ status, pocket, ceiling, sendLimit, note, bills, fli
       <section className="room mist">
         <div className="inner">
           <h2><Ico as={SendIco} /> Send</h2>
+          {hint && <p className="sandbox-hint" role="note">{hint}</p>}
           <div className="form">
             <label>Recipient NEAR account<input value={to} onChange={(e) => setTo(e.target.value)} placeholder="name.near" /></label>
             <label>Amount (USDC)<input className="mono" value={amt} onChange={(e) => setAmt(e.target.value)} inputMode="decimal" /></label>
@@ -74,6 +75,10 @@ export function Phone() {
   const [amt, setAmt] = useState('1');
   const [res, setRes] = useState(null);
   const [sending, setSending] = useState(false);
+  const [mode] = usePoll(() => plain('/api/mode'), [], 60000);
+  const sandbox = !!mode?.body?.sandbox;
+  // In the public sandbox only: the send form starts filled in with the thing to try, so the tour is one press.
+  useEffect(() => { if (sandbox) { setTo((t) => t || 'thief.near'); setAmt((a) => (a === '1' ? '500' : a)); } }, [sandbox]);
   const [split, tiles] = usePocketMotion(s?.status === 200 ? s.body.pocket : null, s?.body?.ceiling);
   const flipIds = useFlipIds(bills?.body?.bills);
   const seq = useRef(0);
@@ -82,5 +87,5 @@ export function Phone() {
   const send = async () => { setSending(true); setRes(null); const r = await plain('/api/phone/send', { method: 'POST', headers, body: { to, amountUsdc: Number(amt) } }); setRes({ ...r, amount: Number(amt).toFixed(2), play: ++seq.current }); setSending(false); reload(); };
   const payBill = async (id) => { const r = await plain(`/api/phone/bills/${id}/pay`, { method: 'POST', body: {} }); setRes({ ...r, amount: null, play: ++seq.current }); reloadBills(); reload(); };
   const status = s?.status === 200 ? 'ok' : s ? 'unreadable' : 'loading';
-  return <PhoneView status={status} pocket={s?.body?.pocket} ceiling={s?.body?.ceiling} sendLimit={s?.body?.sendLimit} note={s?.body?.note} bills={bills?.body?.bills} flipIds={flipIds} split={split} tiles={tiles} res={res} to={to} setTo={setTo} amt={amt} setAmt={setAmt} sending={sending} onSend={send} onPay={payBill} />;
+  return <PhoneView hint={sandbox ? 'Try sending 500, it will be blocked' : undefined} status={status} pocket={s?.body?.pocket} ceiling={s?.body?.ceiling} sendLimit={s?.body?.sendLimit} note={s?.body?.note} bills={bills?.body?.bills} flipIds={flipIds} split={split} tiles={tiles} res={res} to={to} setTo={setTo} amt={amt} setAmt={setAmt} sending={sending} onSend={send} onPay={payBill} />;
 }

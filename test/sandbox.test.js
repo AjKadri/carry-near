@@ -173,6 +173,7 @@ test('the sandbox routes exist only in the sandbox: the normal app has none, and
   try {
     assert.equal((await fetch(base + '/api/sandbox/setup-code')).status, 404);
     assert.equal((await fetch(base + '/api/sandbox/phone', { method: 'POST' })).status, 404);
+    assert.equal((await fetch(base + '/api/sandbox/approve-withdrawal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })).status, 404);
     const m = await (await fetch(base + '/api/mode')).json(); assert.equal(m.sandbox, false); assert.equal(m.landing, false);
   } finally { server.close(); svc.store.close(); }
 });
