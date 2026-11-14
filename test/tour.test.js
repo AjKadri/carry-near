@@ -122,3 +122,12 @@ test('Home is a "home device" in the UI: the word "laptop" appears only in the o
   assert.equal(readme.split(def).length - 1, 1, 'the README explains "home device" once');
   assert.equal((readme.match(/laptop/gi) ?? []).length, 1, 'and "laptop" appears in the README only inside that explanation');
 });
+
+test('the demo video link is set (README top links and the landing page default), with no placeholder left', async () => {
+  const V = 'https://x.com/Web3AJ_/status/2121667799516909792?a=2s4S7XcUkoB5KzMbTkY&s=20';
+  assert.match(fs.readFileSync('README.md', 'utf8'), new RegExp(`\\*\\*Demo video:\\*\\* ${V.replace(/[.?]/g, '\\$&')}`));
+  const { loadConfig } = await import('../server/config.js');
+  assert.equal(loadConfig({ CARRY_MODE: 'mock', CARRY_DB: ':memory:' }).videoUrl, V);
+  assert.equal(/link added after recording/i.test(fs.readFileSync('README.md', 'utf8')), false);
+  assert.match(fs.readFileSync('README.md', 'utf8'), /On iPhone\/iPad Safari, the browser may clear a site's stored data after about 7 days without a visit/);
+});

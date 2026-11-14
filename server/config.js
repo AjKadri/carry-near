@@ -17,7 +17,7 @@ export function loadConfig(overrides = {}) {
     sandboxUrl: env.CARRY_SANDBOX_URL || 'https://demo.carry.ajkadri.dev', // where the live landing page sends visitors to try it
     liveUrl: env.CARRY_LIVE_URL || 'https://carry.ajkadri.dev',               // where the sandbox banner points
     repoUrl: env.CARRY_REPO_URL || 'https://github.com/AjKadri/carry-near',
-    videoUrl: env.CARRY_VIDEO_URL || null,                                    // placeholder until the demo video exists
+    videoUrl: env.CARRY_VIDEO_URL || 'https://x.com/Web3AJ_/status/2121667799516909792?a=2s4S7XcUkoB5KzMbTkY&s=20', // the demo video (a post on X), shown on the landing page
     publicUrl: env.CARRY_PUBLIC_URL || null, // used in the pairing QR; falls back to the browser's own origin
     exitAccount: env.CARRY_EXIT_ACCOUNT || 'nearhacka.near',
     dbPath: env.CARRY_DB || 'data/carry.db',

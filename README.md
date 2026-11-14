@@ -10,7 +10,7 @@ Built at NEAR HACKATHON, November 2026. Tracks: Privacy & Private AI, Real-World
 - **Try it locally in 2 minutes, no keys:** `npm install && npm run demo` (Node 22.13+, simulated money). Steps under "Run it".
 - **Check the claims:** `npm run attack` replays 38 attacks from the phone's side; each prints its raw refusal.
 - **Live instance (the owner's):** https://carry.ajkadri.dev runs on NEAR mainnet with the owner's keys. The pay page is public; Home answers only the owner's home device. To try Carry yourself, use the sandbox above, not this.
-- **Demo video:** _link added after recording_
+- **Demo video:** https://x.com/Web3AJ_/status/2121667799516909792?a=2s4S7XcUkoB5KzMbTkY&s=20
 
 ![Home shows 2.00 USDC protected; the phone shows only its 3.00 pocket.](docs/readme/hero.png)
 
@@ -154,6 +154,7 @@ A deployment runs at https://carry.ajkadri.dev (Ubuntu VPS, Caddy for HTTPS, sys
 - The service holds the pocket key to read the pocket balance. A stolen service host therefore gets the pocket's caps and what the reserve policy allows, not the reserve.
 - OutLayer accepts any vote from the pinned signer key, so Carry's guard is the only thing deciding what is auto-approved. The approver key cannot be rotated once the reserve policy is locked.
 - Every paired phone shares one pocket key; pairing a new phone does not revoke the old one, and freezing is done in the OutLayer dashboard, not from Home.
+- On iPhone/iPad Safari, the browser may clear a site's stored data after about 7 days without a visit unless the site is added to the home screen; a home device that goes unvisited that long could lose its Home key and need `reset-home-key`. Add Carry to the home screen on a Safari home device. (Documented WebKit behaviour; not tested here.)
 - Clearing the home device browser's site data deletes the home key. Funds stay safe (moving them out needs the owner's NEAR admin wallet); you re-pair by running `npm run reset-home-key` on the server and setting up again. A recovery code is on the roadmap.
 - The key cannot be read out, but script running in the Carry page itself (for example through a cross-site scripting bug) could ask the browser to sign requests while the page is open.
 - Whoever can read the server console during first setup can register the home key, so do the first setup before exposing the server.
