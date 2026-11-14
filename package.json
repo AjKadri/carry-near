@@ -20,7 +20,10 @@
     "attack": "node scripts/attack.js",
     "reset-home-key": "node scripts/reset-home-key.js",
     "contrast": "node scripts/contrast.js",
-    "quote-check": "node scripts/quote-check.js"
+    "quote-check": "node scripts/quote-check.js",
+    "test:sandbox": "CARRY_TEST_SANDBOX=1 node --test test/*.test.js",
+    "sandbox": "CARRY_MODE=mock node server/sandbox-main.js",
+    "attack:sandbox": "node scripts/attack.js --sandbox"
   },
   "dependencies": {
     "express": "^5.1.0"

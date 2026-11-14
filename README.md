@@ -6,9 +6,10 @@ Carry splits money the moment it arrives. You get paid through one link, from an
 
 Built at NEAR HACKATHON, November 2026. Tracks: Privacy & Private AI, Real-World Money, AI Security & Defense.
 
-- **Try it in 2 minutes, no keys:** `npm install && npm run demo` (Node 22.13+, simulated money). Steps under "Run it".
+- **Try it in your browser:** https://demo.carry.ajkadri.dev (a public sandbox: simulated money, your own private demo, nothing to install).
+- **Try it locally in 2 minutes, no keys:** `npm install && npm run demo` (Node 22.13+, simulated money). Steps under "Run it".
 - **Check the claims:** `npm run attack` replays 38 attacks from the phone's side; each prints its raw refusal.
-- **Live instance:** https://carry.ajkadri.dev runs on NEAR mainnet. The pay page is public; Home needs the owner's laptop key.
+- **Live instance (the owner's):** https://carry.ajkadri.dev runs on NEAR mainnet with the owner's keys. The pay page is public; Home needs the owner's laptop key. To try Carry yourself, use the sandbox above, not this.
 - **Demo video:** _link added after recording_
 
 ![Laptop Home shows 2.00 USDC protected; the phone shows only its 3.00 pocket.](docs/readme/hero.png)
@@ -39,6 +40,7 @@ The protective mechanics (caps, allow-lists, a separate vault) are not new. What
 - **Phone pairing** ([`server/pairing.js`](server/pairing.js), `test/pairing-link.test.js`): the laptop shows a QR and a confirmation code; the phone claims it and shows the same code; only after the laptop user confirms does the phone receive its pocket credential, once, and nothing else. The "pairing link" under the QR is the same address as the QR (same session, same one-time secret, same 5-minute expiry); it is shown only on Home and can be claimed once. The secret travels in the URL fragment and an `X-Pair-Secret` header, never in a query string or a log.
 - **Phone view and privacy** ([`web/src/phone.jsx`](web/src/phone.jsx), `test/phone-privacy.test.js`): the phone API reads the pocket balance and the bill list, never the reserve, and the phone never shows a reserve amount, in text, in the DOM or in any API response the phone view loads; the Protected band carries only its label. The test fails if any of that changes.
 - **Web app** (`web/src/`, [`web/src/tokens.css`](web/src/tokens.css)): every colour, font, size and motion value lives in `tokens.css`, and a test fails if a literal colour appears anywhere else. Home opens with a plain-words summary ("If your phone is lost tonight, at most X USDC is at risk", X = pocket plus refills still authorised) and the Protected amount, both Home-only; the activity log has Money and System tabs, folds repeated blocked requests and keeps the raw JSON behind "raw".
+- **Public sandbox** ([`server/sandbox.js`](server/sandbox.js), [`server/sandbox-main.js`](server/sandbox-main.js), `test/sandbox.test.js`): the same app in mock mode, but every visitor gets their own in-memory world (store, mock OutLayer and 1Click, home key, pairing) behind a random HttpOnly session cookie, so two browsers never see each other's balances, logs or pairing. Home sets itself up (the browser still makes its own non-extractable device key), "Open the phone view" pairs a phone tab to the same demo, "Reset my demo" starts a fresh world, and a banner on every page says the money is simulated. Up to 500 worlds (least recently used dropped first), 2 hours idle expiry, 30 new worlds per IP per hour. It refuses to start unless `CARRY_MODE=mock` and no live key is in its environment, and it runs as a separate service from the live one. `npm run test:sandbox` runs the whole unit suite through the sandbox's session code path and `npm run attack:sandbox` runs the attack script through it.
 - **Attack script and mock mode** ([`scripts/attack.js`](scripts/attack.js), [`server/mock.js`](server/mock.js), `evidence/`): `npm run attack` replays 30+ attack cases (the phone exceeding caps, creating or editing a bill, raising the allowance; a leaked reserve key; an altered bill amount or payee; second and simultaneous bill use; wrong-key, replayed, second and expired votes; refills above the allowance or ceiling, while halted or frozen; two triggers for one arrival), one PASS/FAIL line each with the raw refusal, and shows each refused request still pending with balances unchanged. Mock mode (the default, no keys) is an in-memory stand-in for OutLayer and 1Click that speaks the same request shapes and verifies vote signatures; it proves the code paths, not mainnet.
 - **Storage and stack**: an SQLite activity log (`node:sqlite`, Node 22.13+, [`server/db.js`](server/db.js)) and a React (Vite) web app.
 
@@ -129,7 +131,7 @@ Everything below is on public chains. Full records, with the file each fact come
 
 ## Deployment
 
-A deployment runs at https://carry.ajkadri.dev (Ubuntu VPS, Caddy for HTTPS, systemd service running as a non-root user on a loopback port). The pay page, phone API and signed home routes are public; every home route needs the laptop key signature. Files and steps are in `deploy/`.
+A deployment runs at https://carry.ajkadri.dev (Ubuntu VPS, Caddy for HTTPS, systemd service running as a non-root user on a loopback port). The pay page, phone API and signed home routes are public; every home route needs the laptop key signature. Files and steps are in `deploy/`. The sandbox at https://demo.carry.ajkadri.dev is a second, separate service (own directory, own systemd unit with a memory cap, no `.env`, mock mode only); its files are in `deploy/` too.
 
 ## Known limits
 

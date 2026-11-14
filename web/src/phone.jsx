@@ -1,6 +1,6 @@
 // The phone view. It loads ONLY the public phone API (/api/phone/*, /api/mode) with the pocket key. It has no reserve
 // amount to show: the phone API never returns one, and nothing in this file reads one. test/phone-privacy.test.js checks.
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { plain, usePoll } from './api.js';
 import { Ico, Wallet, Split as SplitIco, Send as SendIco, ReceiptText } from './icons.jsx';
 import { Split, Tiles, BillTile, Refusal, usdc } from './parts.jsx';
@@ -58,6 +58,15 @@ export function PhoneView({ status, pocket, ceiling, sendLimit, note, bills, fli
 
 export function Phone() {
   const [key] = useState(() => { try { return localStorage.getItem('carryPocketKey') || ''; } catch { return ''; } });
+  // In the public sandbox a phone view with no key pairs itself to this visitor's demo (one click on Home does the same)
+  useEffect(() => {
+    if (key) return;
+    plain('/api/mode').then(async (m) => {
+      if (!m.body?.sandbox) return;
+      const r = await plain('/api/sandbox/phone', { method: 'POST' });
+      if (r.status === 200 && r.body?.pocketKey) { try { localStorage.setItem('carryPocketKey', r.body.pocketKey); } catch { return; } window.location.reload(); }
+    });
+  }, [key]);
   const headers = key ? { Authorization: `Bearer ${key}` } : undefined;
   const [s, reload] = usePoll(() => (key ? plain('/api/phone/state', { headers }) : Promise.resolve(null)), [key], 2000);
   const [bills, reloadBills] = usePoll(() => plain('/api/phone/bills'), [], 3000);

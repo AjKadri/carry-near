@@ -20,7 +20,7 @@ test('home routes without the device key: bare 401, nothing changes, and every a
       ['POST', '/api/home/exit', { amountUsdc: 1 }], ['GET', '/api/home/state'], ['GET', '/api/home/log'], ['POST', '/api/home/pair/start'], ['GET', '/api/home/does-not-exist'],
     ];
     for (const [method, path, body] of attempts) {
-      const r = await fetch(t.pub + path, { method, headers: { 'Content-Type': 'application/json', ...phone }, body: body ? JSON.stringify(body) : undefined });
+      const r = await t.raw(path, { method, headers: { 'Content-Type': 'application/json', ...phone }, body: body ? JSON.stringify(body) : undefined });
       assert.equal(r.status, 401, `${method} ${path}`);
       assert.equal(await r.text(), '{"error":"unauthorized"}');
     }

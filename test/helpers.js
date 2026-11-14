@@ -2,21 +2,32 @@ import { loadConfig } from '../server/config.js';
 import { createServices } from '../server/services.js';
 import { createApp } from '../server/app.js';
 import { makeTestDevice } from '../server/homeauth.js';
+import { createSandbox, COOKIE } from '../server/sandbox.js';
 
 export const REFUND = '7puyGCiSnh55z3EzWEr8MKDBw9FYH2izq4K4mXPNpcuo';
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// CARRY_TEST_SANDBOX=1 (npm run test:sandbox) runs the same tests through the sandbox's session code path: one visitor's own world behind the cookie dispatcher.
 export async function boot({ allowance, mockOpts = {}, now, register = true } = {}) {
-  const config = loadConfig({ CARRY_MODE: 'mock', CARRY_DB: ':memory:' });
-  const svc = createServices(config, { now, mockOpts: { settleDelayMs: 30, ...mockOpts }, settleOpts: { intervalMs: 20, timeoutMs: 5000 } });
-  if (allowance !== undefined) svc.store.setAllowance(BigInt(allowance));
-  await svc.start();
-  const server = createApp(svc).listen(0, '127.0.0.1');
+  const sandbox = process.env.CARRY_TEST_SANDBOX === '1';
+  let sb = null, cookie = null, config, svc, server;
+  if (sandbox) {
+    sb = createSandbox({ now, mockOpts: { settleDelayMs: 30, ...mockOpts }, settleOpts: { intervalMs: 20, timeoutMs: 5000 }, perIpPerHour: 1e9 });
+    const s = await sb.create(); cookie = `${COOKIE}=${s.id}`; svc = s.world.svc; config = svc.config;
+    if (allowance !== undefined) svc.store.setAllowance(BigInt(allowance));
+    server = sb.handler.listen(0, '127.0.0.1');
+  } else {
+    config = loadConfig({ CARRY_MODE: 'mock', CARRY_DB: ':memory:' });
+    svc = createServices(config, { now, mockOpts: { settleDelayMs: 30, ...mockOpts }, settleOpts: { intervalMs: 20, timeoutMs: 5000 } });
+    if (allowance !== undefined) svc.store.setAllowance(BigInt(allowance));
+    await svc.start();
+    server = createApp(svc).listen(0, '127.0.0.1');
+  }
   await new Promise((r) => server.once('listening', r));
   const base = `http://127.0.0.1:${server.address().port}`;
   const device = makeTestDevice();
   if (register) { const r = svc.auth.register({ publicKeySpkiB64: device.publicKeySpkiB64, code: svc.auth.setupCode() }); if (!r.ok) throw new Error('device setup failed'); }
-  const j = async (b, p, init = {}) => { const r = await fetch(b + p, { ...init, headers: { 'Content-Type': 'application/json', ...(init.headers ?? {}) }, body: init.body && typeof init.body !== 'string' ? JSON.stringify(init.body) : init.body }); return { status: r.status, body: await r.json().catch(() => null) }; };
+  const j = async (b, p, init = {}) => { const r = await fetch(b + p, { ...init, headers: { 'Content-Type': 'application/json', ...(cookie ? { Cookie: cookie } : {}), ...(init.headers ?? {}) }, body: init.body && typeof init.body !== 'string' ? JSON.stringify(init.body) : init.body }); return { status: r.status, body: await r.json().catch(() => null) }; };
   // a request from the paired laptop: signed exactly like the browser signs it
   const hj = (p, { method = 'GET', body, headers = {}, sign = {} } = {}) => {
     const raw = body === undefined ? '' : JSON.stringify(body);
@@ -27,7 +38,8 @@ export async function boot({ allowance, mockOpts = {}, now, register = true } = 
     if (q.status !== 200) throw new Error('quote failed ' + JSON.stringify(q));
     svc.mock.simulateDeposit(q.body.address); return q.body;
   };
+  const raw = (p, init = {}) => fetch(base + p, { ...init, headers: { ...(cookie ? { Cookie: cookie } : {}), ...(init.headers ?? {}) } }); // a plain fetch that still reaches this world in sandbox mode
   const settleAll = async (n = 12) => { for (let i = 0; i < n; i++) { await svc.tick(); await sleep(60); } };
   const kinds = () => svc.store.events(500).map((e) => e.kind).reverse();
-  return { svc, config, pub: base, home: base, device, j, hj, pay, settleAll, kinds, close: () => { server.close(); svc.store.close(); } };
+  return { svc, config, raw, pub: base, home: base, device, j, hj, pay, settleAll, kinds, close: () => { server.close(); sb?.close(); svc.store.close(); } };
 }

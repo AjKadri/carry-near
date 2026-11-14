@@ -14,6 +14,10 @@ export function loadConfig(overrides = {}) {
     // One app: pay page, phone API and signed home routes. Loopback by default; a reverse proxy (Caddy) fronts it when deployed.
     port: Number(env.PORT || 8787),
     host: env.HOST || '127.0.0.1',
+    sandboxUrl: env.CARRY_SANDBOX_URL || 'https://demo.carry.ajkadri.dev', // where the live landing page sends visitors to try it
+    liveUrl: env.CARRY_LIVE_URL || 'https://carry.ajkadri.dev',               // where the sandbox banner points
+    repoUrl: env.CARRY_REPO_URL || 'https://github.com/AjKadri/carry-near',
+    videoUrl: env.CARRY_VIDEO_URL || null,                                    // placeholder until the demo video exists
     publicUrl: env.CARRY_PUBLIC_URL || null, // used in the pairing QR; falls back to the browser's own origin
     exitAccount: env.CARRY_EXIT_ACCOUNT || 'nearhacka.near',
     dbPath: env.CARRY_DB || 'data/carry.db',

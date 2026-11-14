@@ -3,3 +3,9 @@ carry.ajkadri.dev {
 	encode zstd gzip
 	reverse_proxy 127.0.0.1:8797
 }
+
+# The public sandbox (mock mode, one world per visitor). Separate service on its own loopback port; see deploy/carry-demo.service.
+demo.carry.ajkadri.dev {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:8798
+}

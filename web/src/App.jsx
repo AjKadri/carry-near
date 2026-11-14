@@ -11,6 +11,63 @@ import { Empty } from './empty.jsx';
 import { HomeSummary } from './home-summary.jsx';
 import { ActivityPanel } from './activity.jsx';
 
+// ---- public sandbox helpers: "Reset my demo" gives this browser a brand new mock world (and forgets the old device key and phone key)
+export const sandboxReset = async () => {
+  await plain('/api/sandbox/reset', { method: 'POST' });
+  try { await clearKey(); } catch { /* none */ }
+  try { localStorage.removeItem('carryPocketKey'); } catch { /* private mode */ }
+};
+function SandboxBanner({ mode }) {
+  return (
+    <div className="banner sandbox">
+      <span>Sandbox: simulated money. The live mainnet instance is at <a href={mode.liveUrl ?? 'https://carry.ajkadri.dev'}>carry.ajkadri.dev</a>.</span>
+      <button className="ghost" onClick={async () => { await sandboxReset(); window.location.assign('/home'); }}>Reset my demo</button>
+    </div>
+  );
+}
+// One click pairs a phone view for this session and opens it in a new tab (the tab is opened first so a pop-up blocker allows it).
+function SandboxTools() {
+  const [busy, setBusy] = useState(false);
+  const open = async () => {
+    setBusy(true);
+    const w = window.open('about:blank', '_blank');
+    const r = await plain('/api/sandbox/phone', { method: 'POST' });
+    if (r.status === 200 && r.body?.pocketKey) { try { localStorage.setItem('carryPocketKey', r.body.pocketKey); } catch { /* private mode */ } if (w) w.location.href = '/phone'; else window.location.assign('/phone'); }
+    else if (w) w.close();
+    setBusy(false);
+  };
+  return (
+    <section className="room paper">
+      <div className="inner">
+        <h2><Ico as={Smartphone} /> Sandbox</h2>
+        <p className="lede">Everything here is simulated and private to this browser. Pay yourself from the <a href={`/pay/demo`}>pay link</a> (press "Mock: simulate this payment"), then watch the split. The phone view opens in its own tab, paired to this same demo.</p>
+        <div className="sandbox-tools"><button className="action" onClick={open} disabled={busy}>Open the phone view</button></div>
+      </div>
+    </section>
+  );
+}
+
+// The live instance's landing page (path "/"): the tagline, what Carry does, two ways in, and the links.
+function Landing({ mode }) {
+  return (
+    <section className="room teal fill landing">
+      <div className="inner">
+        <p className="label">Carry</p>
+        <h1>Robbed, scammed or hacked? They only get what you carry.</h1>
+        <p className="lede">Carry splits money the moment it arrives: a small, capped share goes to the pocket on your phone, and the rest lands in a confidential NEAR reserve that the phone cannot see, reach or unlock.</p>
+        <div className="actions">
+          <a className="btn action" href={mode.sandboxUrl}>Try it yourself: sandbox, about 2 minutes</a>
+          <a className="btn ghost" href="/home">Live mainnet instance (owner's)</a>
+        </div>
+        <ul className="links">
+          <li><a href={mode.repoUrl}>GitHub repository</a></li>
+          <li>{mode.videoUrl ? <a href={mode.videoUrl}>Demo video</a> : <span className="muted">Demo video: coming soon</span>}</li>
+        </ul>
+      </div>
+    </section>
+  );
+}
+
 // The stored id is the name as a slug (lower case letters, digits, dashes): "Rent" -> rent, "Car insurance" -> car-insurance.
 export const billId = (name) => String(name ?? '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
 const Msg = ({ msg, where }) => msg?.where !== where ? null : msg.ok ? <p className="mono wrap" role="status">{msg.text}</p> : <Refusal status={msg.status} body={msg.body} play={msg.status} subject="the reserve" />;
@@ -140,6 +197,20 @@ function HomeGate() {
   const check = useCallback(async () => {
     const s = await plain('/api/home/auth/status');
     const key = await loadKey();
+    const sandbox = (await plain('/api/mode')).body?.sandbox;
+    if (sandbox) { // the public sandbox sets Home up by itself: the browser still makes its own device key and registers it the normal way
+      if (!s.body?.registered) {
+        try {
+          const c = await plain('/api/sandbox/setup-code');
+          const pair = await createKey();
+          const r = await plain('/api/home/auth/setup', { method: 'POST', body: { publicKey: await publicKeySpkiB64(pair), setupCode: c.body?.setupCode } });
+          if (r.status === 200) { setStage('ready'); return; }
+          await clearKey();
+        } catch { /* fall through to the reset offer */ }
+        setStage('blocked'); return;
+      }
+      setStage(key ? 'ready' : 'blocked'); return;
+    }
     if (!s.body?.registered) setStage('setup');
     else if (!key) setStage('blocked');
     else setStage('ready');
@@ -163,7 +234,7 @@ function HomeGate() {
   );
   if (stage === 'blocked') return <Gate title="Home"><Refused head="Blocked"><p>Another browser is set up as this Carry's home. Open Home on that laptop. If you lost it, run <code className="mono">npm run reset-home-key</code> on the server and set up again. Your funds stay safe either way: moving them out needs the owner's NEAR wallet.</p></Refused></Gate>;
   if (stage === 'unrecognised') return <Gate title="Home"><Refused head="Blocked"><p>The server does not recognise this browser's key.</p></Refused><p><button className="ghost" onClick={async () => { await clearKey(); check(); }}>Forget this browser's key</button></p></Gate>;
-  return <HomeApp onUnrecognised={() => setStage('unrecognised')} />;
+  return <HomeApp onUnrecognised={() => (sandboxReset().then(() => window.location.reload()))} />;
 }
 
 function PairPanel({ paired }) {
@@ -248,6 +319,8 @@ function HomeApp({ onUnrecognised }) {
         {st?.halted && <Refused head={st.halted.code}><p>Refills are halted until reviewed. <button className="ghost" onClick={() => act('/api/home/engine/clear-halt', { method: 'POST' }, () => 'Halt cleared. Refills resume on the next cycle.')}>Clear</button></p></Refused>}
       </HomeSummary>
 
+      {mode?.body?.sandbox && <SandboxTools />}
+
       <Protects />
 
       <section className="room mist">
@@ -325,18 +398,18 @@ export function App() {
   const [m] = usePoll(() => plain('/api/mode'), [], 60000);
   const mode = m?.body;
   const path = window.location.pathname;
-  const view = path.startsWith('/pay/') ? 'pay' : path.startsWith('/pair/') ? 'pair' : path.startsWith('/phone') ? 'phone' : 'home';
+  const view = path === '/' && mode?.landing ? 'landing' : path.startsWith('/pay/') ? 'pay' : path.startsWith('/pair/') ? 'pair' : path.startsWith('/phone') ? 'phone' : 'home';
   return (
     <>
-      {mode?.mode === 'mock' && <div className="banner">Mock mode: simulated money, no network calls.</div>}
+      {mode?.sandbox ? <SandboxBanner mode={mode} /> : mode?.mode === 'mock' && <div className="banner">Mock mode: simulated money, no network calls.</div>}
       <header className="bar">
         <div className="bar-in">
           <a className="mark" href="/">Carry</a>
-          {mode && view !== 'pair' && <nav><a href="/home" aria-current={view === 'home' ? 'page' : undefined}>Home</a><a href="/phone" aria-current={view === 'phone' ? 'page' : undefined}>Phone</a><a href={`/pay/${mode.handle}`} aria-current={view === 'pay' ? 'page' : undefined}>Pay link</a></nav>}
+          {mode && view !== 'pair' && view !== 'landing' && <nav><a href="/home" aria-current={view === 'home' ? 'page' : undefined}>Home</a><a href="/phone" aria-current={view === 'phone' ? 'page' : undefined}>Phone</a><a href={`/pay/${mode.handle}`} aria-current={view === 'pay' ? 'page' : undefined}>Pay link</a></nav>}
         </div>
       </header>
       <main>
-        {view === 'pay' ? <Pay handle={path.split('/')[2]} /> : view === 'pair' ? <PairPhone id={path.split('/')[2]} /> : view === 'phone' ? <Phone /> : <HomeGate />}
+        {view === 'landing' ? <Landing mode={mode} /> : view === 'pay' ? <Pay handle={path.split('/')[2]} /> : view === 'pair' ? <PairPhone id={path.split('/')[2]} /> : view === 'phone' ? <Phone /> : <HomeGate />}
       </main>
     </>
   );

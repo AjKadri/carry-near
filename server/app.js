@@ -15,7 +15,7 @@ const bearer = (req) => { const m = /^Bearer (.+)$/.exec(req.get('authorization'
 //            Every request must carry a valid laptop device-key signature (server/homeauth.js); anything else is a bare 401.
 //   static   the web app
 // There is no way to reach a signed route without the signature: the middleware runs before the route table.
-export function createApp(svc) {
+export function createApp(svc, { sandbox = false, noStatic = false } = {}) {
   const { store, engine, ol, intake, config, auth, pairing } = svc;
   const app = express();
   app.set('trust proxy', 'loopback'); // Caddy on the same host; req.ip is then the real client for the blocked log
@@ -26,7 +26,12 @@ export function createApp(svc) {
   });
   app.use(express.json({ limit: '10kb', verify: (req, _res, buf) => { req.rawBody = buf; } })); // the signature covers the raw bytes
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
-  app.get('/api/mode', (_req, res) => res.json({ mode: config.mode, handle: config.handle, publicUrl: config.publicUrl }));
+  app.get('/api/mode', (_req, res) => res.json({
+    mode: config.mode, handle: config.handle, publicUrl: config.publicUrl,
+    sandbox, // a public per-visitor mock world (server/sandbox.js)
+    landing: config.mode === 'live' && !sandbox, // the live instance shows a small landing page at "/"
+    sandboxUrl: config.sandboxUrl, liveUrl: config.liveUrl, repoUrl: config.repoUrl, videoUrl: config.videoUrl,
+  }));
 
   // ---------------- unsigned: device-key setup (one time, needs the code printed on the server console)
   app.get('/api/home/auth/status', (_req, res) => res.json({ registered: auth.registered() }));
@@ -134,9 +139,23 @@ export function createApp(svc) {
   home.post('/pair/:id/confirm', (req, res) => res.json({ ok: pairing.confirm(req.params.id) }));
   home.post('/pair/:id/cancel', (req, res) => { pairing.cancel(req.params.id); res.json({ ok: true }); });
 
+  // ---------------- sandbox only: this visitor's own mock world. Never mounted on the live instance.
+  if (sandbox) {
+    // Home is set up automatically for this session: the browser still makes its own non-extractable device key and registers it through
+    // the normal setup route; only the one-time code is handed out here (it belongs to this visitor's world and nothing else).
+    app.get('/api/sandbox/setup-code', (_req, res) => { const code = auth.setupCode(); code ? res.json({ setupCode: code }) : res.status(409).json({ error: 'already set up' }); });
+    // One click pairs a phone view for this session, through the normal pairing module (start, claim, confirm, result).
+    app.post('/api/sandbox/phone', (_req, res) => {
+      const s = pairing.start(); if (!s) return res.status(429).json({ error: 'too many open pairing sessions' });
+      pairing.claim(s.id, s.secret); pairing.confirm(s.id);
+      const r = pairing.result(s.id, s.secret);
+      res.status(r.status).json(r.body);
+    });
+  }
+
   // ---------------- static web app
   const dist = path.resolve('web/dist');
-  if (fs.existsSync(dist)) {
+  if (!noStatic && fs.existsSync(dist)) {
     app.use(express.static(dist));
     app.get(/^\/(?!api\/).*/, (_req, res) => res.sendFile(path.join(dist, 'index.html')));
   }

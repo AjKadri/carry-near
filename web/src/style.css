@@ -54,9 +54,9 @@ input, select { font: inherit; font-size: var(--size-body); letter-spacing: 0; t
 select { appearance: auto; }
 input.mono { font-family: var(--font-mono); font-weight: 500; }
 input::placeholder { color: var(--muted); opacity: 1; }
-button { font-family: var(--font-display); font-weight: var(--weight-display); text-transform: uppercase; letter-spacing: 0.04em; font-size: var(--size-body); min-height: var(--tap); padding: 0 1.25rem; border: var(--rule) solid var(--fg); border-radius: var(--radius); cursor: pointer; }
-button.action { background: var(--btn-bg); color: var(--btn-fg); border-color: var(--btn-bg); }
-button.ghost { background: transparent; color: var(--fg); }
+button, a.btn { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; font-family: var(--font-display); font-weight: var(--weight-display); text-transform: uppercase; letter-spacing: 0.04em; font-size: var(--size-body); min-height: var(--tap); padding: 0 1.25rem; border: var(--rule) solid var(--fg); border-radius: var(--radius); cursor: pointer; }
+button.action, a.btn.action { background: var(--btn-bg); color: var(--btn-fg); border-color: var(--btn-bg); }
+button.ghost, a.btn.ghost { background: transparent; color: var(--fg); }
 button:disabled { cursor: progress; border-style: dashed; }
 :focus-visible { outline: var(--rule) solid var(--fg); outline-offset: 3px; }
 .status { display: grid; gap: 0.25rem; border-top: var(--rule) solid var(--fg); padding-top: var(--gap); }
@@ -188,3 +188,12 @@ h2 .ico { width: 0.8em; height: 0.8em; vertical-align: -0.05em; margin-right: 0.
 .facts dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
 .card-note { margin: var(--gap) 0 0; padding-top: var(--gap); border-top: var(--hairline) solid var(--on-paper-muted); }
 @media (min-width: 62rem) { .pay-main + .card { margin-top: calc(var(--size-label) * 2.6); } }
+
+/* Sandbox banner and the landing page on the live instance */
+.banner.sandbox { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: center; justify-content: space-between; }
+.banner.sandbox a { color: inherit; }
+.banner.sandbox button { min-height: 2rem; padding: 0 0.75rem; font-size: var(--size-small); background: transparent; color: inherit; border-color: currentColor; }
+.landing .actions { display: flex; flex-wrap: wrap; gap: var(--gap); margin: var(--section-pad) 0 var(--gap); }
+.landing .links { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; margin: var(--gap) 0 0; padding: 0; list-style: none; }
+.landing .lede { max-width: 40rem; }
+.sandbox-tools { display: flex; flex-wrap: wrap; gap: var(--gap); align-items: center; }

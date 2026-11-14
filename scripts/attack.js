@@ -9,6 +9,7 @@ import crypto from 'node:crypto';
 import { loadConfig, requireLive } from '../server/config.js';
 import { createServices } from '../server/services.js';
 import { createApp } from '../server/app.js';
+import { createSandbox, COOKIE } from '../server/sandbox.js';
 import { makeTestDevice } from '../server/homeauth.js';
 import { decide, USDC_TOKEN } from '../server/guard.js';
 import { signNep413, newKey } from '../server/nep413.js';
@@ -17,6 +18,8 @@ import { MOCK_POCKET_KEY, MOCK_LANDLORD, MOCK_EXIT } from '../server/mock.js';
 
 const args = process.argv.slice(2);
 const LIVE = args.includes('--live');
+const SANDBOX = args.includes('--sandbox'); // mock only: run every case through the public sandbox's session code path (cookie dispatcher + one world per visitor)
+if (SANDBOX && LIVE) { console.error('--sandbox is mock only'); process.exit(2); }
 if (LIVE && !args.includes('--yes')) { console.error('Live mode moves real (tiny) money. Re-run with: npm run attack -- --live --yes'); process.exit(2); }
 const ONLY = args.find((a) => a.startsWith('--only='))?.slice(7).split(',') ?? null; // e.g. --only=B5,B7,B8 (used to resume a live run without repeating cases)
 const SPEND_CAP = 250_000; // micro-USDC, everything counted (our moves + the owner's payment)
@@ -37,8 +40,11 @@ async function buildEnv({ mockOpts = {}, topUpMs = 3600e3 } = {}) {
     ? loadConfig({ CARRY_MODE: 'live', CARRY_DB: 'data/attack-live.db', CARRY_TOPUP_MS: String(topUpMs) })
     : loadConfig({ CARRY_MODE: 'mock', CARRY_DB: ':memory:', CARRY_TOPUP_MS: String(topUpMs) });
   if (LIVE) { for (const f of ['data/attack-live.db', 'data/attack-live.db-wal', 'data/attack-live.db-shm']) fs.rmSync(f, { force: true }); requireLive(config); }
-  const svc = createServices(config, { now, mockOpts: { settleDelayMs: 40, ...mockOpts }, settleOpts: { intervalMs: LIVE ? 2000 : 20, timeoutMs: LIVE ? 120000 : 5000 } });
-  const wallets = await svc.start();
+  let svc, sb = null, cookie = null;
+  const wopts = { now, mockOpts: { settleDelayMs: 40, ...mockOpts }, settleOpts: { intervalMs: LIVE ? 2000 : 20, timeoutMs: LIVE ? 120000 : 5000 } };
+  if (SANDBOX) { sb = createSandbox({ ...wopts, env: { CARRY_TOPUP_MS: String(topUpMs) }, perIpPerHour: 1e9 }); const s = await sb.create(); cookie = `${COOKIE}=${s.id}`; svc = s.world.svc; }
+  else svc = createServices(config, wopts);
+  const wallets = SANDBOX ? svc.walletState : await svc.start();
   const servers = [];
   const listen = async (app) => { const s = app.listen(0, '127.0.0.1'); await new Promise((r) => s.once('listening', r)); servers.push(s); return `http://127.0.0.1:${s.address().port}`; };
   const env = {
@@ -49,13 +55,13 @@ async function buildEnv({ mockOpts = {}, topUpMs = 3600e3 } = {}) {
     pocketAuth: LIVE ? { key: config.live.pocketKey } : { key: MOCK_POCKET_KEY },
     approver: LIVE ? config.live.approver : svc.mock.approver,
     pub: null, home: null,
-    close: () => { servers.forEach((s) => s.close()); },
+    close: () => { servers.forEach((s) => s.close()); sb?.close(); },
   };
-  env.pub = env.home = await listen(createApp(svc));
+  env.pub = env.home = await listen(SANDBOX ? sb.handler : createApp(svc));
   env.device = makeTestDevice(); // stands in for the laptop's browser key
   if (!svc.auth.register({ publicKeySpkiB64: env.device.publicKeySpkiB64, code: svc.auth.setupCode() }).ok) throw new Error('device setup failed');
   env.fetchJ = async (base, p, init = {}) => {
-    const r = await fetch(base + p, { ...init, headers: { 'Content-Type': 'application/json', ...(init.headers ?? {}) }, body: init.body && typeof init.body !== 'string' ? JSON.stringify(init.body) : init.body });
+    const r = await fetch(base + p, { ...init, headers: { 'Content-Type': 'application/json', ...(cookie ? { Cookie: cookie } : {}), ...(init.headers ?? {}) }, body: init.body && typeof init.body !== 'string' ? JSON.stringify(init.body) : init.body });
     const text = await r.text(); let body; try { body = JSON.parse(text); } catch { body = text; }
     return { status: r.status, body, text };
   };
@@ -479,6 +485,6 @@ function finish() {
   say(`\n# SUMMARY (${LIVE ? 'live' : 'mock'}): ${n('PASS')} PASS, ${n('FAIL')} FAIL, ${n('SKIP')} SKIP, ${n('INFO')} INFO${n('FINDING') ? `, ${n('FINDING')} FINDING` : ''}${LIVE ? ` | live spend counter ${spent / 1e6} USDC (cap ${SPEND_CAP / 1e6})` : ''}`);
   if (!LIVE) say('# MOCK run: this proves the code paths and refusal logic, not mainnet. Run `npm run attack -- --live --yes` for mainnet.');
   fs.mkdirSync('evidence', { recursive: true });
-  fs.writeFileSync(`evidence/attack-${LIVE ? 'live' : 'mock'}-${new Date().toISOString().replace(/[:.]/g, '-')}.txt`, out.join('\n').replace(/(wk_[A-Za-z0-9]+|Bearer\s+[^\s"]+)/g, '[REDACTED]') + '\n');
+  fs.writeFileSync(`evidence/attack-${LIVE ? 'live' : SANDBOX ? 'sandbox' : 'mock'}-${new Date().toISOString().replace(/[:.]/g, '-')}.txt`, out.join('\n').replace(/(wk_[A-Za-z0-9]+|Bearer\s+[^\s"]+)/g, '[REDACTED]') + '\n');
   process.exit(results.some((r) => r.status === 'FAIL') ? 1 : 0);
 }

@@ -1,0 +1,28 @@
+# /etc/systemd/system/carry-demo.service  (the public sandbox: mock mode only, one in-memory world per visitor)
+[Unit]
+Description=Carry sandbox (mock mode)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+DynamicUser=yes
+WorkingDirectory=/opt/carry-demo
+# No EnvironmentFile on purpose: the sandbox never sees a key. sandbox-main.js also refuses to start if CARRY_MODE is not exactly "mock" or a live key is in its environment.
+Environment=CARRY_MODE=mock PORT=8798 HOST=127.0.0.1
+ExecStart=/usr/bin/node server/sandbox-main.js
+Restart=always
+RestartSec=3
+# A runaway sandbox is killed by the kernel inside its own cgroup, never the live service next to it.
+MemoryMax=600M
+TasksMax=200
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+# Nothing is written anywhere: every world lives in memory.
+
+[Install]
+WantedBy=multi-user.target
