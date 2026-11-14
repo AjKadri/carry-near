@@ -74,9 +74,23 @@ Both are `type: confidential_transfer` with `confidential: true`, and the respon
 | Source | Lowest amount refused / accepted | Fee at 1 / 10 / 100 (source units) | Payment tested live? |
 |---|---|---|---|
 | USDC on Solana | accepted 0.05 | 0.000202 / 0.000491 / 0.004911 | **Yes**, a real 1 USDC payment (section 1) |
-| USDC on Base | refused below 0.15; accepted 0.25 | 0.000202 / 0.000433 / 0.004327 | No (quote only) |
+| USDC on Base | refused below 0.15; accepted 0.25 | 0.000202 / 0.000433 / 0.004327 | **Yes**, a real 0.5 USDC payment (section 7) |
 | USDC on Arbitrum | accepted 0.05 | 0.000202 / 0.000569 / 0.005687 | No (quote only) |
 | USDC on Ethereum | refused below 0.300001; accepted 0.5 | 0.000202 / 0.000482 / 0.004816 | No (quote only) |
 | USDT on Tron | refused below about 2.61 (2.613288 to 2.613801 over the run); accepted 5 | 0.004214 / 0.007842 / 0.078415 | No (quote only) |
 
 The fee is the amount in minus the quoted amount out (it includes the price difference between USDT and USDC on Tron). Refusals are 1Click's own: `Amount is too low for bridge, try at least <units>`. One lesson from this run: 1Click rejects a token contract or mint as `refundTo` with a bare "Internal server error" (HTTP 400); a normal wallet address works.
+
+## 7. A real payment from Base through the live pay link (14 Nov 2026)
+
+Done by the owner from their own wallet (0.5 USDC on Base, the owner's own refund address); Carry only issued the address and watched.
+
+| Step | Fact | Source |
+|---|---|---|
+| Address issued | 12:16:48 UTC, `base-usdc`, 0.5 USDC, deposit address `0xd1fc4EdDd9bd198acC806A477F3d0cC7657fB216` | live event log `address_issued` (id 83) |
+| Base transaction | `0x9f8f403eeb7ba2ecdd3406c35a8f5b2ea761b3ed205a7fec04200382828fd93e`, success, block 57341297, a call to the Base USDC contract `0x833589fc…2913` (read from the public Base RPC on 14 Nov) | https://basescan.org/tx/0x9f8f403eeb7ba2ecdd3406c35a8f5b2ea761b3ed205a7fec04200382828fd93e |
+| NEAR transactions (1Click settlement) | `CHqZqg5HLMhQX7tSsrFicsv1n9qGWCLBwHcXivEnWPr3`, `JB9fxerv7d23MDx8qFcQubY78gUsTkCvm6xmdZdfiicc` | https://nearblocks.io/txns/CHqZqg5HLMhQX7tSsrFicsv1n9qGWCLBwHcXivEnWPr3 , https://nearblocks.io/txns/JB9fxerv7d23MDx8qFcQubY78gUsTkCvm6xmdZdfiicc |
+| Arrival detected and logged | 12:17:43 UTC, `payment_in`, amount 499898 (0.499898 USDC after fees), `chain: base-usdc`, `amountIn` 500000 | live event log id 84 |
+| Result | Refill skipped, reason "no refill allowance left" (allowance 0, pocket 1.26, ceiling 20): the pocket is unchanged and the money stays Protected; the reserve's confidential balance is 0.969482 USDC | event id 85 |
+
+I did not open the two NEAR transactions on NearBlocks (it blocks automated clients); their hashes are the ones 1Click reported in the status response.
