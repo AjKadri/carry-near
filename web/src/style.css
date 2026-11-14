@@ -50,7 +50,8 @@ nav a[aria-current] { border-bottom-color: var(--on-paper); }
 .form { display: grid; gap: var(--gap); max-width: 32rem; margin: var(--gap) 0; }
 .form.inline { grid-template-columns: 1fr auto; align-items: end; }
 label { display: grid; gap: 0.4rem; font-weight: var(--weight-strong); font-size: var(--size-label); letter-spacing: 0.1em; text-transform: uppercase; }
-input { font: inherit; font-size: var(--size-body); letter-spacing: 0; text-transform: none; font-weight: var(--weight-body); width: 100%; min-height: var(--tap); padding: 0 0.75rem; background: transparent; color: var(--fg); border: var(--rule) solid var(--fg); border-radius: var(--radius); }
+input, select { font: inherit; font-size: var(--size-body); letter-spacing: 0; text-transform: none; font-weight: var(--weight-body); width: 100%; min-height: var(--tap); padding: 0 0.75rem; background: transparent; color: var(--fg); border: var(--rule) solid var(--fg); border-radius: var(--radius); }
+select { appearance: auto; }
 input.mono { font-family: var(--font-mono); font-weight: 500; }
 input::placeholder { color: var(--muted); opacity: 1; }
 button { font-family: var(--font-display); font-weight: var(--weight-display); text-transform: uppercase; letter-spacing: 0.04em; font-size: var(--size-body); min-height: var(--tap); padding: 0 1.25rem; border: var(--rule) solid var(--fg); border-radius: var(--radius); cursor: pointer; }

@@ -21,6 +21,7 @@ export function openStore(file) {
       id TEXT PRIMARY KEY, label TEXT NOT NULL, payee TEXT NOT NULL, amount INTEGER NOT NULL,
       expires_at INTEGER NOT NULL, used INTEGER NOT NULL DEFAULT 0, used_at TEXT, request_id TEXT);
   `);
+  for (const col of ['chain TEXT NOT NULL DEFAULT \'sol-usdc\'', 'min_in INTEGER']) { try { db.exec(`ALTER TABLE addresses ADD COLUMN ${col}`); } catch { /* already there */ } }
   const q = (sql) => db.prepare(sql);
   const now = () => new Date().toISOString();
   const s = {
@@ -38,9 +39,9 @@ export function openStore(file) {
     markBillUsed: (id, requestId) => q('UPDATE bills SET used=1, used_at=?, request_id=? WHERE id=? AND used=0').run(now(), requestId ?? null, id).changes === 1,
     unuseBill: (id) => q('UPDATE bills SET used=0, used_at=NULL WHERE id=?').run(id),
     // --- addresses and arrivals
-    addAddress: (a) => q('INSERT INTO addresses (address,handle,amount_in,amount_out,refund_to,deadline,created_at) VALUES (?,?,?,?,?,?,?)').run(a.address, a.handle, a.amountIn, a.amountOut ?? null, a.refundTo, a.deadline, now()),
+    addAddress: (a) => q('INSERT INTO addresses (address,handle,amount_in,amount_out,refund_to,deadline,created_at,chain,min_in) VALUES (?,?,?,?,?,?,?,?,?)').run(a.address, a.handle, a.amountIn, a.amountOut ?? null, a.refundTo, a.deadline, now(), a.chain ?? 'sol-usdc', a.minIn ?? null),
     address: (addr) => q('SELECT * FROM addresses WHERE address=?').get(addr),
-    reusableAddress: (handle, amountIn, refundTo, notAfter) => q("SELECT * FROM addresses WHERE handle=? AND amount_in=? AND refund_to=? AND final=0 AND status='PENDING_DEPOSIT' AND deadline>? ORDER BY created_at DESC LIMIT 1").get(handle, amountIn, refundTo, notAfter),
+    reusableAddress: (handle, amountIn, refundTo, notAfter, chain = 'sol-usdc') => q("SELECT * FROM addresses WHERE handle=? AND amount_in=? AND refund_to=? AND chain=? AND final=0 AND status='PENDING_DEPOSIT' AND deadline>? ORDER BY created_at DESC LIMIT 1").get(handle, amountIn, refundTo, chain, notAfter),
     openAddresses: () => q('SELECT * FROM addresses WHERE final=0').all(),
     countOpenAddresses: () => q("SELECT COUNT(*) c FROM addresses WHERE final=0 AND status='PENDING_DEPOSIT'").get().c,
     setAddressStatus: (addr, status, final) => q('UPDATE addresses SET status=?, final=? WHERE address=?').run(status, final ? 1 : 0, addr),

@@ -1,0 +1,1140 @@
+{
+  "at": "2026-11-14T11:43:21.575Z",
+  "listedByOneClick": [
+    "sol-usdc",
+    "base-usdc",
+    "arb-usdc",
+    "eth-usdc",
+    "tron-usdt"
+  ],
+  "notListed": [],
+  "results": [
+    {
+      "chain": "sol-usdc",
+      "amountUsdc": 0.05,
+      "http": 201,
+      "request": {
+        "dry": true,
+        "swapType": "FLEX_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:sol-5ce3bf3a31af18be40ba30f721101b4341690186.omft.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+        "amount": "50000",
+        "refundTo": "7puyGCiSnh55z3EzWEr8MKDBw9FYH2izq4K4mXPNpcuo",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "<reserve account>",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "deadline": "2026-11-17T11:43:21.577Z"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "50000",
+          "amountInFormatted": "0.05",
+          "amountInUsd": "0.049980750000",
+          "minAmountIn": "49500",
+          "amountOut": "49988",
+          "amountOutFormatted": "0.049988",
+          "amountOutUsd": "0.049968754620",
+          "minAmountOut": "49488",
+          "timeEstimate": 20,
+          "refundFee": "9974",
+          "withdrawFee": "0"
+        }
+      }
+    },
+    {
+      "chain": "sol-usdc",
+      "amountUsdc": 0.25,
+      "http": 201,
+      "request": {
+        "dry": true,
+        "swapType": "FLEX_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:sol-5ce3bf3a31af18be40ba30f721101b4341690186.omft.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+        "amount": "250000",
+        "refundTo": "7puyGCiSnh55z3EzWEr8MKDBw9FYH2izq4K4mXPNpcuo",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "<reserve account>",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "deadline": "2026-11-17T11:43:22.576Z"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "250000",
+          "amountInFormatted": "0.25",
+          "amountInUsd": "0.249903750000",
+          "minAmountIn": "247500",
+          "amountOut": "249948",
+          "amountOutFormatted": "0.249948",
+          "amountOutUsd": "0.249851770020",
+          "minAmountOut": "247448",
+          "timeEstimate": 20,
+          "refundFee": "9974",
+          "withdrawFee": "0"
+        }
+      }
+    },
+    {
+      "chain": "sol-usdc",
+      "amountUsdc": 0.5,
+      "http": 201,
+      "request": {
+        "dry": true,
+        "swapType": "FLEX_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:sol-5ce3bf3a31af18be40ba30f721101b4341690186.omft.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+        "amount": "500000",
+        "refundTo": "7puyGCiSnh55z3EzWEr8MKDBw9FYH2izq4K4mXPNpcuo",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "<reserve account>",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "deadline": "2026-11-17T11:43:23.673Z"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "500000",
+          "amountInFormatted": "0.5",
+          "amountInUsd": "0.499807500000",
+          "minAmountIn": "495000",
+          "amountOut": "499898",
+          "amountOutFormatted": "0.499898",
+          "amountOutUsd": "0.499705539270",
+          "minAmountOut": "494899",
+          "timeEstimate": 20,
+          "refundFee": "9974",
+          "withdrawFee": "0"
+        }
+      }
+    },
+    {
+      "chain": "sol-usdc",
+      "amountUsdc": 1,
+      "http": 201,
+      "request": {
+        "dry": true,
+        "swapType": "FLEX_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:sol-5ce3bf3a31af18be40ba30f721101b4341690186.omft.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+        "amount": "1000000",
+        "refundTo": "7puyGCiSnh55z3EzWEr8MKDBw9FYH2izq4K4mXPNpcuo",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "<reserve account>",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "deadline": "2026-11-17T11:43:24.619Z"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "1000000",
+          "amountInFormatted": "1.0",
+          "amountInUsd": "0.999615000000",
+          "minAmountIn": "990000",
+          "amountOut": "999798",
+          "amountOutFormatted": "0.999798",
+          "amountOutUsd": "0.999413077770",
+          "minAmountOut": "989800",
+          "timeEstimate": 20,
+          "refundFee": "9974",
+          "withdrawFee": "0"
+        }
+      }
+    },
+    {
+      "chain": "sol-usdc",
+      "amountUsdc": 5,
+      "http": 201,
+      "request": {
+        "dry": true,
+        "swapType": "FLEX_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:sol-5ce3bf3a31af18be40ba30f721101b4341690186.omft.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+        "amount": "5000000",
+        "refundTo": "7puyGCiSnh55z3EzWEr8MKDBw9FYH2izq4K4mXPNpcuo",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "<reserve account>",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "deadline": "2026-11-17T11:43:25.625Z"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "5000000",
+          "amountInFormatted": "5.0",
+          "amountInUsd": "4.998075000000",
+          "minAmountIn": "4950000",
+          "amountOut": "4999754",
+          "amountOutFormatted": "4.999754",
+          "amountOutUsd": "4.997829094710",
+          "minAmountOut": "4949756",
+          "timeEstimate": 20,
+          "refundFee": "9974",
+          "withdrawFee": "0"
+        }
+      }
+    },
+    {
+      "chain": "sol-usdc",
+      "amountUsdc": 10,
+      "http": 201,
+      "request": {
+        "dry": true,
+        "swapType": "FLEX_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:sol-5ce3bf3a31af18be40ba30f721101b4341690186.omft.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+        "amount": "10000000",
+        "refundTo": "7puyGCiSnh55z3EzWEr8MKDBw9FYH2izq4K4mXPNpcuo",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "<reserve account>",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "deadline": "2026-11-17T11:43:26.644Z"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "10000000",
+          "amountInFormatted": "10.0",
+          "amountInUsd": "9.996150000000",
+          "minAmountIn": "9900000",
+          "amountOut": "9999509",
+          "amountOutFormatted": "9.999509",
+          "amountOutUsd": "9.995659189035",
+          "minAmountOut": "9899513",
+          "timeEstimate": 20,
+          "refundFee": "9974",
+          "withdrawFee": "0"
+        }
+      }
+    },
+    {
+      "chain": "sol-usdc",
+      "amountUsdc": 100,
+      "http": 201,
+      "request": {
+        "dry": true,
+        "swapType": "FLEX_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:sol-5ce3bf3a31af18be40ba30f721101b4341690186.omft.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+        "amount": "100000000",
+        "refundTo": "7puyGCiSnh55z3EzWEr8MKDBw9FYH2izq4K4mXPNpcuo",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "<reserve account>",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "deadline": "2026-11-17T11:43:27.667Z"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "100000000",
+          "amountInFormatted": "100.0",
+          "amountInUsd": "99.961500000000",
+          "minAmountIn": "99000000",
+          "amountOut": "99995089",
+          "amountOutFormatted": "99.995089",
+          "amountOutUsd": "99.956590890735",
+          "minAmountOut": "98995138",
+          "timeEstimate": 20,
+          "refundFee": "10004",
+          "withdrawFee": "0"
+        }
+      }
+    },
+    {
+      "chain": "base-usdc",
+      "amountUsdc": 0.05,
+      "http": 400,
+      "request": {
+        "dry": true,
+        "swapType": "FLEX_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:base-0x833589fcd6edb6e08f4c7c32d4f71b54bda02913.omft.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+        "amount": "50000",
+        "refundTo": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "<reserve account>",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "deadline": "2026-11-17T11:43:28.939Z"
+      },
+      "response": {
+        "message": "Amount is too low for bridge, try at least 150000",
+        "correlationId": "c8c13e06-c177-4c6c-bbce-44520f988799",
+        "timestamp": "2026-11-14T11:43:31.470Z",
+        "path": "/v0/quote"
+      }
+    },
+    {
+      "chain": "base-usdc",
+      "amountUsdc": 0.25,
+      "http": 201,
+      "request": {
+        "dry": true,
+        "swapType": "FLEX_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:base-0x833589fcd6edb6e08f4c7c32d4f71b54bda02913.omft.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+        "amount": "250000",
+        "refundTo": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "<reserve account>",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "deadline": "2026-11-17T11:43:29.851Z"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "250000",
+          "amountInFormatted": "0.25",
+          "amountInUsd": "0.249899500000",
+          "minAmountIn": "247500",
+          "amountOut": "249948",
+          "amountOutFormatted": "0.249948",
+          "amountOutUsd": "0.249847520904",
+          "minAmountOut": "247448",
+          "timeEstimate": 35,
+          "refundFee": "2400",
+          "withdrawFee": "0"
+        }
+      }
+    },
+    {
+      "chain": "base-usdc",
+      "amountUsdc": 0.5,
+      "http": 201,
+      "request": {
+        "dry": true,
+        "swapType": "FLEX_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:base-0x833589fcd6edb6e08f4c7c32d4f71b54bda02913.omft.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+        "amount": "500000",
+        "refundTo": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "<reserve account>",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "deadline": "2026-11-17T11:43:30.759Z"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "500000",
+          "amountInFormatted": "0.5",
+          "amountInUsd": "0.499799000000",
+          "minAmountIn": "495000",
+          "amountOut": "499898",
+          "amountOutFormatted": "0.499898",
+          "amountOutUsd": "0.499697041004",
+          "minAmountOut": "494899",
+          "timeEstimate": 35,
+          "refundFee": "2400",
+          "withdrawFee": "0"
+        }
+      }
+    },
+    {
+      "chain": "base-usdc",
+      "amountUsdc": 1,
+      "http": 201,
+      "request": {
+        "dry": true,
+        "swapType": "FLEX_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:base-0x833589fcd6edb6e08f4c7c32d4f71b54bda02913.omft.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+        "amount": "1000000",
+        "refundTo": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "<reserve account>",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "deadline": "2026-11-17T11:43:31.686Z"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "1000000",
+          "amountInFormatted": "1.0",
+          "amountInUsd": "0.999598000000",
+          "minAmountIn": "990000",
+          "amountOut": "999798",
+          "amountOutFormatted": "0.999798",
+          "amountOutUsd": "0.999396081204",
+          "minAmountOut": "989800",
+          "timeEstimate": 35,
+          "refundFee": "2400",
+          "withdrawFee": "0"
+        }
+      }
+    },
+    {
+      "chain": "base-usdc",
+      "amountUsdc": 5,
+      "http": 201,
+      "request": {
+        "dry": true,
+        "swapType": "FLEX_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:base-0x833589fcd6edb6e08f4c7c32d4f71b54bda02913.omft.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+        "amount": "5000000",
+        "refundTo": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "<reserve account>",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "deadline": "2026-11-17T11:43:32.572Z"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "5000000",
+          "amountInFormatted": "5.0",
+          "amountInUsd": "4.997990000000",
+          "minAmountIn": "4950000",
+          "amountOut": "4999783",
+          "amountOutFormatted": "4.999783",
+          "amountOutUsd": "4.997773087234",
+          "minAmountOut": "4949785",
+          "timeEstimate": 35,
+          "refundFee": "2400",
+          "withdrawFee": "0"
+        }
+      }
+    },
+    {
+      "chain": "base-usdc",
+      "amountUsdc": 10,
+      "http": 201,
+      "request": {
+        "dry": true,
+        "swapType": "FLEX_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:base-0x833589fcd6edb6e08f4c7c32d4f71b54bda02913.omft.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+        "amount": "10000000",
+        "refundTo": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "<reserve account>",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "deadline": "2026-11-17T11:43:33.507Z"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "10000000",
+          "amountInFormatted": "10.0",
+          "amountInUsd": "9.995980000000",
+          "minAmountIn": "9900000",
+          "amountOut": "9999567",
+          "amountOutFormatted": "9.999567",
+          "amountOutUsd": "9.995547174066",
+          "minAmountOut": "9899571",
+          "timeEstimate": 35,
+          "refundFee": "2400",
+          "withdrawFee": "0"
+        }
+      }
+    },
+    {
+      "chain": "base-usdc",
+      "amountUsdc": 100,
+      "http": 201,
+      "request": {
+        "dry": true,
+        "swapType": "FLEX_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:base-0x833589fcd6edb6e08f4c7c32d4f71b54bda02913.omft.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+        "amount": "100000000",
+        "refundTo": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "<reserve account>",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "deadline": "2026-11-17T11:43:34.532Z"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "100000000",
+          "amountInFormatted": "100.0",
+          "amountInUsd": "99.959800000000",
+          "minAmountIn": "99000000",
+          "amountOut": "99995673",
+          "amountOutFormatted": "99.995673",
+          "amountOutUsd": "99.955474739454",
+          "minAmountOut": "98995716",
+          "timeEstimate": 35,
+          "refundFee": "2400",
+          "withdrawFee": "0"
+        }
+      }
+    },
+    {
+      "chain": "arb-usdc",
+      "amountUsdc": 0.05,
+      "http": 201,
+      "request": {
+        "dry": true,
+        "swapType": "FLEX_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:arb-0xaf88d065e77c8cc2239327c5edb3a432268e5831.omft.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+        "amount": "50000",
+        "refundTo": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "<reserve account>",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "deadline": "2026-11-17T11:43:35.451Z"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "50000",
+          "amountInFormatted": "0.05",
+          "amountInUsd": "0.049979900000",
+          "minAmountIn": "49500",
+          "amountOut": "49988",
+          "amountOutFormatted": "0.049988",
+          "amountOutUsd": "0.049967904824",
+          "minAmountOut": "49488",
+          "timeEstimate": 25,
+          "refundFee": "5300",
+          "withdrawFee": "0"
+        }
+      }
+    },
+    {
+      "chain": "arb-usdc",
+      "amountUsdc": 0.25,
+      "http": 201,
+      "request": {
+        "dry": true,
+        "swapType": "FLEX_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:arb-0xaf88d065e77c8cc2239327c5edb3a432268e5831.omft.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+        "amount": "250000",
+        "refundTo": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "<reserve account>",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "deadline": "2026-11-17T11:43:36.353Z"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "250000",
+          "amountInFormatted": "0.25",
+          "amountInUsd": "0.249899500000",
+          "minAmountIn": "247500",
+          "amountOut": "249948",
+          "amountOutFormatted": "0.249948",
+          "amountOutUsd": "0.249847520904",
+          "minAmountOut": "247448",
+          "timeEstimate": 25,
+          "refundFee": "5300",
+          "withdrawFee": "0"
+        }
+      }
+    },
+    {
+      "chain": "arb-usdc",
+      "amountUsdc": 0.5,
+      "http": 201,
+      "request": {
+        "dry": true,
+        "swapType": "FLEX_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:arb-0xaf88d065e77c8cc2239327c5edb3a432268e5831.omft.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+        "amount": "500000",
+        "refundTo": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "<reserve account>",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "deadline": "2026-11-17T11:43:37.244Z"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "500000",
+          "amountInFormatted": "0.5",
+          "amountInUsd": "0.499799000000",
+          "minAmountIn": "495000",
+          "amountOut": "499898",
+          "amountOutFormatted": "0.499898",
+          "amountOutUsd": "0.499697041004",
+          "minAmountOut": "494899",
+          "timeEstimate": 25,
+          "refundFee": "5300",
+          "withdrawFee": "0"
+        }
+      }
+    },
+    {
+      "chain": "arb-usdc",
+      "amountUsdc": 1,
+      "http": 201,
+      "request": {
+        "dry": true,
+        "swapType": "FLEX_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:arb-0xaf88d065e77c8cc2239327c5edb3a432268e5831.omft.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+        "amount": "1000000",
+        "refundTo": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "<reserve account>",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "deadline": "2026-11-17T11:43:38.139Z"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "1000000",
+          "amountInFormatted": "1.0",
+          "amountInUsd": "0.999598000000",
+          "minAmountIn": "990000",
+          "amountOut": "999798",
+          "amountOutFormatted": "0.999798",
+          "amountOutUsd": "0.999396081204",
+          "minAmountOut": "989800",
+          "timeEstimate": 25,
+          "refundFee": "5300",
+          "withdrawFee": "0"
+        }
+      }
+    },
+    {
+      "chain": "arb-usdc",
+      "amountUsdc": 5,
+      "http": 201,
+      "request": {
+        "dry": true,
+        "swapType": "FLEX_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:arb-0xaf88d065e77c8cc2239327c5edb3a432268e5831.omft.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+        "amount": "5000000",
+        "refundTo": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "<reserve account>",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "deadline": "2026-11-17T11:43:39.162Z"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "5000000",
+          "amountInFormatted": "5.0",
+          "amountInUsd": "4.997990000000",
+          "minAmountIn": "4950000",
+          "amountOut": "4999715",
+          "amountOutFormatted": "4.999715",
+          "amountOutUsd": "4.997705114570",
+          "minAmountOut": "4949717",
+          "timeEstimate": 25,
+          "refundFee": "5300",
+          "withdrawFee": "0"
+        }
+      }
+    },
+    {
+      "chain": "arb-usdc",
+      "amountUsdc": 10,
+      "http": 201,
+      "request": {
+        "dry": true,
+        "swapType": "FLEX_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:arb-0xaf88d065e77c8cc2239327c5edb3a432268e5831.omft.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+        "amount": "10000000",
+        "refundTo": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "<reserve account>",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "deadline": "2026-11-17T11:43:40.100Z"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "10000000",
+          "amountInFormatted": "10.0",
+          "amountInUsd": "9.995980000000",
+          "minAmountIn": "9900000",
+          "amountOut": "9999431",
+          "amountOutFormatted": "9.999431",
+          "amountOutUsd": "9.995411228738",
+          "minAmountOut": "9899436",
+          "timeEstimate": 25,
+          "refundFee": "5300",
+          "withdrawFee": "0"
+        }
+      }
+    },
+    {
+      "chain": "arb-usdc",
+      "amountUsdc": 100,
+      "http": 201,
+      "request": {
+        "dry": true,
+        "swapType": "FLEX_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:arb-0xaf88d065e77c8cc2239327c5edb3a432268e5831.omft.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+        "amount": "100000000",
+        "refundTo": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "<reserve account>",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "deadline": "2026-11-17T11:43:41.010Z"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "100000000",
+          "amountInFormatted": "100.0",
+          "amountInUsd": "99.959800000000",
+          "minAmountIn": "99000000",
+          "amountOut": "99994313",
+          "amountOutFormatted": "99.994313",
+          "amountOutUsd": "99.954115286174",
+          "minAmountOut": "98994369",
+          "timeEstimate": 25,
+          "refundFee": "5300",
+          "withdrawFee": "0"
+        }
+      }
+    },
+    {
+      "chain": "eth-usdc",
+      "amountUsdc": 0.05,
+      "http": 400,
+      "request": {
+        "dry": true,
+        "swapType": "FLEX_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:eth-0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48.omft.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+        "amount": "50000",
+        "refundTo": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "<reserve account>",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "deadline": "2026-11-17T11:43:41.969Z"
+      },
+      "response": {
+        "message": "Amount is too low for bridge, try at least 300001",
+        "correlationId": "b86584e9-cb98-4871-b88c-f659164a6104",
+        "timestamp": "2026-11-14T11:43:44.471Z",
+        "path": "/v0/quote"
+      }
+    },
+    {
+      "chain": "eth-usdc",
+      "amountUsdc": 0.25,
+      "http": 400,
+      "request": {
+        "dry": true,
+        "swapType": "FLEX_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:eth-0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48.omft.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+        "amount": "250000",
+        "refundTo": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "<reserve account>",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "deadline": "2026-11-17T11:43:43.007Z"
+      },
+      "response": {
+        "message": "Amount is too low for bridge, try at least 300001",
+        "correlationId": "e296a0c1-777a-4718-9bc4-92d8dc56b37a",
+        "timestamp": "2026-11-14T11:43:45.527Z",
+        "path": "/v0/quote"
+      }
+    },
+    {
+      "chain": "eth-usdc",
+      "amountUsdc": 0.5,
+      "http": 201,
+      "request": {
+        "dry": true,
+        "swapType": "FLEX_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:eth-0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48.omft.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+        "amount": "500000",
+        "refundTo": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "<reserve account>",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "deadline": "2026-11-17T11:43:43.905Z"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "500000",
+          "amountInFormatted": "0.5",
+          "amountInUsd": "0.499799000000",
+          "minAmountIn": "495000",
+          "amountOut": "499898",
+          "amountOutFormatted": "0.499898",
+          "amountOutUsd": "0.499697041004",
+          "minAmountOut": "494899",
+          "timeEstimate": 45,
+          "refundFee": "300000",
+          "withdrawFee": "0"
+        }
+      }
+    },
+    {
+      "chain": "eth-usdc",
+      "amountUsdc": 1,
+      "http": 201,
+      "request": {
+        "dry": true,
+        "swapType": "FLEX_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:eth-0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48.omft.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+        "amount": "1000000",
+        "refundTo": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "<reserve account>",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "deadline": "2026-11-17T11:43:44.791Z"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "1000000",
+          "amountInFormatted": "1.0",
+          "amountInUsd": "0.999598000000",
+          "minAmountIn": "990000",
+          "amountOut": "999798",
+          "amountOutFormatted": "0.999798",
+          "amountOutUsd": "0.999396081204",
+          "minAmountOut": "989800",
+          "timeEstimate": 45,
+          "refundFee": "300000",
+          "withdrawFee": "0"
+        }
+      }
+    },
+    {
+      "chain": "eth-usdc",
+      "amountUsdc": 5,
+      "http": 201,
+      "request": {
+        "dry": true,
+        "swapType": "FLEX_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:eth-0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48.omft.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+        "amount": "5000000",
+        "refundTo": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "<reserve account>",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "deadline": "2026-11-17T11:43:45.679Z"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "5000000",
+          "amountInFormatted": "5.0",
+          "amountInUsd": "4.997990000000",
+          "minAmountIn": "4950000",
+          "amountOut": "4999759",
+          "amountOutFormatted": "4.999759",
+          "amountOutUsd": "4.997749096882",
+          "minAmountOut": "4949761",
+          "timeEstimate": 45,
+          "refundFee": "300000",
+          "withdrawFee": "0"
+        }
+      }
+    },
+    {
+      "chain": "eth-usdc",
+      "amountUsdc": 10,
+      "http": 201,
+      "request": {
+        "dry": true,
+        "swapType": "FLEX_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:eth-0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48.omft.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+        "amount": "10000000",
+        "refundTo": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "<reserve account>",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "deadline": "2026-11-17T11:43:46.611Z"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "10000000",
+          "amountInFormatted": "10.0",
+          "amountInUsd": "9.995980000000",
+          "minAmountIn": "9900000",
+          "amountOut": "9999518",
+          "amountOutFormatted": "9.999518",
+          "amountOutUsd": "9.995498193764",
+          "minAmountOut": "9899522",
+          "timeEstimate": 45,
+          "refundFee": "300000",
+          "withdrawFee": "0"
+        }
+      }
+    },
+    {
+      "chain": "eth-usdc",
+      "amountUsdc": 100,
+      "http": 201,
+      "request": {
+        "dry": true,
+        "swapType": "FLEX_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:eth-0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48.omft.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+        "amount": "100000000",
+        "refundTo": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "<reserve account>",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "deadline": "2026-11-17T11:43:47.514Z"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "100000000",
+          "amountInFormatted": "100.0",
+          "amountInUsd": "99.959800000000",
+          "minAmountIn": "99000000",
+          "amountOut": "99995184",
+          "amountOutFormatted": "99.995184",
+          "amountOutUsd": "99.954985936032",
+          "minAmountOut": "98995232",
+          "timeEstimate": 45,
+          "refundFee": "300000",
+          "withdrawFee": "0"
+        }
+      }
+    },
+    {
+      "chain": "tron-usdt",
+      "amountUsdc": 0.05,
+      "http": 400,
+      "request": {
+        "dry": true,
+        "swapType": "FLEX_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:tron-d28a265909efecdcee7c5028585214ea0b96f015.omft.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+        "amount": "50000",
+        "refundTo": "TVjpchRyV9wdpj6kmwqVsBDWY1J8PaFtnb",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "<reserve account>",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "deadline": "2026-11-17T11:43:48.406Z"
+      },
+      "response": {
+        "message": "Amount is too low for bridge, try at least 2613713",
+        "correlationId": "b05ca726-90ed-4f2c-92fd-b6c641d193a5",
+        "timestamp": "2026-11-14T11:43:51.106Z",
+        "path": "/v0/quote"
+      }
+    },
+    {
+      "chain": "tron-usdt",
+      "amountUsdc": 0.25,
+      "http": 400,
+      "request": {
+        "dry": true,
+        "swapType": "FLEX_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:tron-d28a265909efecdcee7c5028585214ea0b96f015.omft.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+        "amount": "250000",
+        "refundTo": "TVjpchRyV9wdpj6kmwqVsBDWY1J8PaFtnb",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "<reserve account>",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "deadline": "2026-11-17T11:43:49.485Z"
+      },
+      "response": {
+        "message": "Amount is too low for bridge, try at least 2613713",
+        "correlationId": "71382fc7-9910-4ef2-8b83-1a9a4ae186c1",
+        "timestamp": "2026-11-14T11:43:52.185Z",
+        "path": "/v0/quote"
+      }
+    },
+    {
+      "chain": "tron-usdt",
+      "amountUsdc": 0.5,
+      "http": 400,
+      "request": {
+        "dry": true,
+        "swapType": "FLEX_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:tron-d28a265909efecdcee7c5028585214ea0b96f015.omft.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+        "amount": "500000",
+        "refundTo": "TVjpchRyV9wdpj6kmwqVsBDWY1J8PaFtnb",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "<reserve account>",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "deadline": "2026-11-17T11:43:50.604Z"
+      },
+      "response": {
+        "message": "Amount is too low for bridge, try at least 2613713",
+        "correlationId": "5807f87b-4398-437b-bd68-6184a8230edb",
+        "timestamp": "2026-11-14T11:43:53.160Z",
+        "path": "/v0/quote"
+      }
+    },
+    {
+      "chain": "tron-usdt",
+      "amountUsdc": 1,
+      "http": 400,
+      "request": {
+        "dry": true,
+        "swapType": "FLEX_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:tron-d28a265909efecdcee7c5028585214ea0b96f015.omft.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+        "amount": "1000000",
+        "refundTo": "TVjpchRyV9wdpj6kmwqVsBDWY1J8PaFtnb",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "<reserve account>",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "deadline": "2026-11-17T11:43:51.630Z"
+      },
+      "response": {
+        "message": "Amount is too low for bridge, try at least 2613713",
+        "correlationId": "8a833be4-f31f-485a-8217-8991d9ad70a6",
+        "timestamp": "2026-11-14T11:43:54.322Z",
+        "path": "/v0/quote"
+      }
+    },
+    {
+      "chain": "tron-usdt",
+      "amountUsdc": 5,
+      "http": 201,
+      "request": {
+        "dry": true,
+        "swapType": "FLEX_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:tron-d28a265909efecdcee7c5028585214ea0b96f015.omft.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+        "amount": "5000000",
+        "refundTo": "TVjpchRyV9wdpj6kmwqVsBDWY1J8PaFtnb",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "<reserve account>",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "deadline": "2026-11-17T11:43:52.842Z"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "5000000",
+          "amountInFormatted": "5.0",
+          "amountInUsd": "4.996200000000",
+          "minAmountIn": "4950000",
+          "amountOut": "4995786",
+          "amountOutFormatted": "4.995786",
+          "amountOutUsd": "4.993777694028",
+          "minAmountOut": "4945828",
+          "timeEstimate": 80,
+          "refundFee": "1613713",
+          "withdrawFee": "0"
+        }
+      }
+    },
+    {
+      "chain": "tron-usdt",
+      "amountUsdc": 10,
+      "http": 201,
+      "request": {
+        "dry": true,
+        "swapType": "FLEX_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:tron-d28a265909efecdcee7c5028585214ea0b96f015.omft.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+        "amount": "10000000",
+        "refundTo": "TVjpchRyV9wdpj6kmwqVsBDWY1J8PaFtnb",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "<reserve account>",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "deadline": "2026-11-17T11:43:53.817Z"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "10000000",
+          "amountInFormatted": "10.0",
+          "amountInUsd": "9.992400000000",
+          "minAmountIn": "9900000",
+          "amountOut": "9992158",
+          "amountOutFormatted": "9.992158",
+          "amountOutUsd": "9.988141152484",
+          "minAmountOut": "9892236",
+          "timeEstimate": 80,
+          "refundFee": "1613713",
+          "withdrawFee": "0"
+        }
+      }
+    },
+    {
+      "chain": "tron-usdt",
+      "amountUsdc": 100,
+      "http": 201,
+      "request": {
+        "dry": true,
+        "swapType": "FLEX_INPUT",
+        "slippageTolerance": 100,
+        "originAsset": "nep141:tron-d28a265909efecdcee7c5028585214ea0b96f015.omft.near",
+        "depositType": "ORIGIN_CHAIN",
+        "destinationAsset": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+        "amount": "100000000",
+        "refundTo": "TVjpchRyV9wdpj6kmwqVsBDWY1J8PaFtnb",
+        "refundType": "ORIGIN_CHAIN",
+        "recipient": "<reserve account>",
+        "recipientType": "CONFIDENTIAL_INTENTS",
+        "deadline": "2026-11-17T11:43:54.804Z"
+      },
+      "response": {
+        "quote": {
+          "amountIn": "100000000",
+          "amountInFormatted": "100.0",
+          "amountInUsd": "99.924000000000",
+          "minAmountIn": "99000000",
+          "amountOut": "99921585",
+          "amountOutFormatted": "99.921585",
+          "amountOutUsd": "99.881416522830",
+          "minAmountOut": "98922369",
+          "timeEstimate": 80,
+          "refundFee": "1613713",
+          "withdrawFee": "0"
+        }
+      }
+    }
+  ]
+}

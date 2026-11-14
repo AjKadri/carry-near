@@ -37,11 +37,16 @@ export function createApp(svc) {
 
   // ---------------- public: pay link
   const handleOk = (req, res) => (req.params.handle === intake.handle ? true : (res.status(404).json({ error: 'unknown payment link' }), false));
-  app.get('/api/pay/:handle', (req, res) => { if (handleOk(req, res)) res.json(intake.info()); });
+  app.get('/api/pay/:handle', async (req, res) => { if (handleOk(req, res)) res.json(await intake.info()); });
+  const payErr = (res, err) => res.status(err.status && err.status < 600 ? (err.status === 401 || err.status === 403 ? 502 : err.status) : 502).json({ error: err.message });
+  app.post('/api/pay/:handle/estimate', async (req, res) => {
+    if (!handleOk(req, res)) return;
+    try { res.json(await intake.estimate({ chain: req.body?.chain, amountUsdc: req.body?.amountUsdc, ip: req.ip })); } catch (err) { payErr(res, err); }
+  });
   app.post('/api/pay/:handle/quote', async (req, res) => {
     if (!handleOk(req, res)) return;
-    try { res.json(await intake.quote({ amountUsdc: req.body?.amountUsdc, refundTo: req.body?.refundTo, ip: req.ip })); }
-    catch (err) { res.status(err.status && err.status < 600 ? (err.status === 401 || err.status === 403 ? 502 : err.status) : 502).json({ error: err.message }); }
+    try { res.json(await intake.quote({ chain: req.body?.chain, amountUsdc: req.body?.amountUsdc, refundTo: req.body?.refundTo, ip: req.ip })); }
+    catch (err) { payErr(res, err); }
   });
   app.get('/api/pay/:handle/status', (req, res) => { if (!handleOk(req, res)) return; const s = intake.status(String(req.query.address ?? '')); s ? res.json(s) : res.status(404).json({ error: 'unknown address' }); });
   if (config.mode === 'mock') app.post('/api/mock/pay', (req, res) => { const ok = svc.mock.simulateDeposit(String(req.body?.address ?? '')); res.status(ok ? 200 : 404).json({ ok }); });

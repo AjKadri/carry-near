@@ -21,15 +21,32 @@ function Pay({ handle }) {
   const [info] = usePoll(() => plain(`/api/pay/${handle}`), [handle], 60000);
   const [amount, setAmount] = useState('5');
   const [refundTo, setRefundTo] = useState('');
+  const [chainId, setChainId] = useState('');
+  const [est, setEst] = useState(null);
   const [quote, setQuote] = useState(null);
   const [error, setError] = useState('');
   const [mockMsg, setMockMsg] = useState('');
   const [status] = usePoll(() => (quote ? plain(`/api/pay/${handle}/status?address=${quote.address}`) : Promise.resolve(null)), [quote?.address], 3000);
   const [mode] = usePoll(() => plain('/api/mode'), [], 60000);
   if (info?.status === 404) return <section className="room teal fill"><div className="inner"><h1>Not found</h1><p>This payment link does not exist.</p></div></section>;
+  const chains = info?.body?.chains ?? [];
+  const chain = chains.find((c) => c.id === chainId) ?? chains.find((c) => c.id === info?.body?.defaultChain) ?? chains[0];
+  // The fee and the lowest accepted amount come from a dry 1Click quote for the chosen chain (no address, no money).
+  useEffect(() => {
+    if (!chain || quote) return undefined;
+    setEst(null);
+    let off = false;
+    const t = setTimeout(async () => {
+      if (!(Number(amount) > 0)) return;
+      const r = await plain(`/api/pay/${handle}/estimate`, { method: 'POST', body: { chain: chain.id, amountUsdc: Number(amount) } });
+      if (!off) setEst(r.status === 200 ? r.body : { error: r.body?.error ?? 'could not get a fee estimate' });
+    }, 400);
+    return () => { off = true; clearTimeout(t); };
+  }, [chain?.id, amount, quote, handle]);
+  const exact = (m) => String(m / 1e6);
   const ask = async () => {
     setError('');
-    const r = await plain(`/api/pay/${handle}/quote`, { method: 'POST', body: { amountUsdc: Number(amount), refundTo } });
+    const r = await plain(`/api/pay/${handle}/quote`, { method: 'POST', body: { chain: chain?.id, amountUsdc: Number(amount), refundTo } });
     r.status === 200 ? setQuote(r.body) : setError(r.body?.error ?? 'could not get an address');
   };
   const st = status?.body?.status;
@@ -41,20 +58,22 @@ function Pay({ handle }) {
        <div className="pay-main">
         <p className="label">Pay link</p>
         <h1>Pay {info?.body?.payee ?? handle}</h1>
-        <p className="lede">Pay with USDC on Solana. Enter an amount and your own Solana address (used only to return the payment if it fails).</p>
+        <p className="lede">Pay with {chain ? chain.label : 'USDC on Solana'}. It always arrives as USDC in a protected account. Enter an amount and your own {chain?.addressName ?? 'Solana address'} (used only to return the payment if it fails).</p>
         {!quote && (
           <div className="form">
-            <label>Amount (USDC)<input className="mono" value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" /></label>
-            <label>Your Solana address<input className="mono" value={refundTo} onChange={(e) => setRefundTo(e.target.value)} placeholder="Your Solana address" /></label>
+            {chains.length > 1 && <label>Pay with<select value={chain?.id ?? ''} onChange={(e) => { setChainId(e.target.value); setRefundTo(''); setError(''); }}>{chains.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}</select></label>}
+            <label>Amount ({chain?.symbol ?? 'USDC'})<input className="mono" value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" /></label>
+            <label>Your {chain?.addressName ?? 'Solana address'}<input className="mono" value={refundTo} onChange={(e) => setRefundTo(e.target.value)} placeholder={`Your ${chain?.addressName ?? 'Solana address'}`} /></label>
+            <p className="mono small" aria-live="polite">{est?.error && !est.tooLow ? est.error : est ? `${est.tooLow ? est.error : `Fee about ${exact(est.fee)} ${chain.symbol} · arrives about ${exact(est.amountOut)} USDC`}${est.minimum != null && !est.tooLow ? ` · minimum ${exact(est.minimum)} ${chain.symbol}` : ''}` : 'Checking the fee…'}</p>
             <button className="action" onClick={ask}>Get payment address</button>
           </div>
         )}
         {error && <Refused><p className="mono refusal-raw">{error}</p></Refused>}
         {quote && (
           <div className="stack">
-            <p>Send <b className="mono">{usdc(quote.amountIn)} USDC</b> on <b>Solana</b> to:</p>
+            <p>Send <b className="mono">{usdc(quote.amountIn)} {quote.chain?.symbol ?? 'USDC'}</b> on <b>{quote.chain?.chain ?? 'Solana'}</b> to:</p>
             <p className="slab mono wrap">{quote.address}</p>
-            <p>Valid until <span className="mono">{new Date(quote.deadline).toLocaleString()}</span></p>
+            <p>Valid until <span className="mono">{new Date(quote.deadline).toLocaleString()}</span>{quote.fee != null && <> · fee about <span className="mono">{exact(quote.fee)} {quote.chain?.symbol}</span></>}{quote.minimum != null && <> · minimum <span className="mono">{exact(quote.minimum)} {quote.chain?.symbol}</span></>}. Send only {quote.chain?.symbol ?? 'USDC'} on {quote.chain?.chain ?? 'Solana'} to this address.</p>
             <p className="status" role="status"><span className="label">Status</span><b>{stText}</b></p>
             {mode?.body?.mode === 'mock' && st === 'PENDING_DEPOSIT' && <p><button className="ghost" onClick={async () => { const r = await plain('/api/mock/pay', { method: 'POST', body: { address: quote.address } }); setMockMsg(r.body?.ok ? 'simulated' : 'failed'); }}>Mock: simulate this payment</button> <span className="mono">{mockMsg}</span></p>}
           </div>
@@ -64,7 +83,7 @@ function Pay({ handle }) {
         <p className="label"><Ico as={ShieldCheck} /> Payment summary</p>
         <dl className="facts">
           <dt>Paying</dt><dd><b>{info?.body?.payee ?? handle}</b></dd>
-          <dt>You send</dt><dd className="mono">{quote ? `${usdc(quote.amountIn)} USDC` : `${Number(amount) > 0 ? Number(amount).toFixed(2) : '–'} USDC`}</dd>
+          <dt>You send</dt><dd className="mono">{quote ? `${usdc(quote.amountIn)} ${quote.chain?.symbol ?? 'USDC'}` : `${Number(amount) > 0 ? Number(amount).toFixed(2) : '–'} ${chain?.symbol ?? 'USDC'}`}</dd>
           <dt>Arrives after fees</dt><dd className="mono">{quote?.amountOut ? `about ${usdc(quote.amountOut)} USDC` : 'shown once you get a payment address'}</dd>
         </dl>
         <p className="card-note">Your payment lands in a protected account. Only a small share reaches their phone.</p>

@@ -4,8 +4,21 @@
 import crypto from 'node:crypto';
 import { USDC_TOKEN } from './guard.js';
 import { verifyNep413, newKey, b58enc } from './nep413.js';
+import { CHAINS } from './chains.js';
+import { NEAR_USDC as NEAR_USDC_ASSET } from './oneclick.js';
 
 const uuid = () => crypto.randomUUID();
+// Lowest amounts (micro-USDC) the real 1Click refused below in the live dry quotes of 14 Nov 2026 (evidence/quotes-dry-*.json); Solana and Arbitrum accepted 0.05.
+const MOCK_MIN_IN = { 'base-usdc': 150000, 'eth-usdc': 300001, 'tron-usdt': 2613288 };
+// A deposit address shaped like the chain's own: base58 (Solana), 0x + 40 hex (EVM), base58check starting with T (Tron).
+function mockDepositAddress(chainId) {
+  if (chainId === 'sol-usdc') return b58enc(crypto.randomBytes(32));
+  if (chainId === 'tron-usdt') {
+    const h = (b) => crypto.createHash('sha256').update(b).digest(), p = Buffer.concat([Buffer.from([0x41]), crypto.randomBytes(20)]);
+    return b58enc(Buffer.concat([p, h(h(p)).subarray(0, 4)]));
+  }
+  return '0x' + crypto.randomBytes(20).toString('hex');
+}
 export const MOCK_POCKET_ACCOUNT = '96cb4ed480cb63a7e7dfe95ba52fcd96d87e10eb2f1ae2e4630985c1fb086c5f';
 export const MOCK_RESERVE_ACCOUNT = '61ffccb371b88a88407c527f0e0fcc4b2e52d1253668a60d9199382c34beebea';
 export const MOCK_LANDLORD = 'd7041ab1063b3f017ae4d43857b225c2897b0d39682cbd2048c539a04b4805a4';
@@ -94,17 +107,25 @@ export function createMock({ now = Date.now, settleDelayMs = 1500, tweakApproval
   m.credit = (amount) => { bal.reserve += BigInt(amount); };
   m.oneClick = async (method, path, body) => {
     let mt;
+    if (method === 'GET' && path === '/v0/tokens') return { status: 200, body: [...CHAINS.map((c) => ({ assetId: c.assetId, decimals: 6, blockchain: c.id.split('-')[0], symbol: c.symbol })), { assetId: NEAR_USDC_ASSET, decimals: 6, blockchain: 'near', symbol: 'USDC' }] };
     if (method === 'POST' && path === '/v0/quote') {
-      const address = b58enc(crypto.randomBytes(32)), amountIn = Number(body.amount);
-      const q = { address, amountIn, amountOut: Math.round(amountIn * 0.9998), deadline: body.deadline, status: 'PENDING_DEPOSIT', successAt: null };
-      quotes.set(address, q);
-      return { status: 201, body: { quote: { depositAddress: address, amountIn: String(amountIn), minAmountIn: String(Math.round(amountIn * 0.99)), amountOut: String(q.amountOut), deadline: q.deadline } } };
+      const chain = CHAINS.find((c) => c.assetId === body.originAsset), amountIn = Number(body.amount);
+      if (!chain || body.destinationAsset !== NEAR_USDC_ASSET || body.recipientType !== 'CONFIDENTIAL_INTENTS') return { status: 400, body: { message: 'unsupported asset pair' } };
+      const bad = chain.validate(body.refundTo);
+      if (bad) return { status: 400, body: { message: 'Invalid refundTo address' } };
+      const floor = MOCK_MIN_IN[chain.id] ?? 0;
+      if (amountIn < floor) return { status: 400, body: { message: `Amount is too low for bridge, try at least ${floor}` } };
+      const address = mockDepositAddress(chain.id), amountOut = Math.round(amountIn * 0.9998);
+      const view = { amountIn: String(amountIn), minAmountIn: String(Math.round(amountIn * 0.99)), amountOut: String(amountOut), deadline: body.deadline };
+      if (body.dry) return { status: 200, body: { quote: view } };
+      quotes.set(address, { address, chain: chain.id, amountIn, amountOut, deadline: body.deadline, status: 'PENDING_DEPOSIT', successAt: null });
+      return { status: 201, body: { quote: { depositAddress: address, ...view } } };
     }
     if (method === 'GET' && (mt = path.match(/^\/v0\/status\?depositAddress=(.+)$/))) {
       const q = quotes.get(decodeURIComponent(mt[1]));
       if (!q) return { status: 404, body: { message: 'deposit address not found' } };
       if (q.status === 'PROCESSING' && q.successAt <= now()) { q.status = 'SUCCESS'; m.credit(q.amountOut); }
-      return { status: 200, body: { status: q.status, swapDetails: q.status === 'SUCCESS' ? { amountIn: String(q.amountIn), amountOut: String(q.amountOut), originChainTxHashes: ['mock-solana-tx'], nearTxHashes: ['mock-near-tx'] } : {} } };
+      return { status: 200, body: { status: q.status, swapDetails: q.status === 'SUCCESS' ? { amountIn: String(q.amountIn), amountOut: String(q.amountOut), originChainTxHashes: [`mock-${q.chain}-tx`], nearTxHashes: ['mock-near-tx'] } : {} } };
     }
     return { status: 404, body: {} };
   };

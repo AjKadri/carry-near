@@ -1,7 +1,7 @@
 {
   "name": "carry",
   "version": "0.1.0",
-  "description": "Get paid from any chain. Your phone only carries a small amount; the rest sits in a reserve the phone cannot reach.",
+  "description": "Get paid from another chain (USDC on Solana, Base, Arbitrum or Ethereum, USDT on Tron). Your phone only carries a small amount; the rest sits in a reserve the phone cannot reach.",
   "license": "Apache-2.0",
   "private": true,
   "type": "module",
@@ -19,7 +19,8 @@
     "test": "node --test test/*.test.js",
     "attack": "node scripts/attack.js",
     "reset-home-key": "node scripts/reset-home-key.js",
-    "contrast": "node scripts/contrast.js"
+    "contrast": "node scripts/contrast.js",
+    "quote-check": "node scripts/quote-check.js"
   },
   "dependencies": {
     "express": "^5.1.0"
