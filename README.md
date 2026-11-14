@@ -2,7 +2,7 @@
 
 Robbed, scammed or hacked? They only get what you carry.
 
-Carry splits money the moment it arrives. You get paid through one link, from any chain. A small, capped share goes to the pocket on your phone; the rest lands in a confidential NEAR reserve that the phone cannot see, reach or unlock. Whoever controls the phone (a robber, a scammer coaching you on a call, malware, a phishing approval) can take only what is in the pocket, plus refills you have already authorised from your laptop.
+Carry splits money the moment it arrives. You get paid through one link, from another chain (USDC on Solana today; NEAR Intents can route more). A small, capped share goes to the pocket on your phone; the rest lands in a confidential NEAR reserve that the phone cannot see, reach or unlock. Whoever controls the phone (a robber, a scammer coaching you on a call, malware, a phishing approval) can take only what is in the pocket, plus refills you have already authorised from your laptop.
 
 Built at NEAR HACKATHON, November 2026. Tracks: Privacy & Private AI, Real-World Money, AI Security & Defense.
 
@@ -24,7 +24,7 @@ Built at NEAR HACKATHON, November 2026. Tracks: Privacy & Private AI, Real-World
 
 | | What it does | Carry's difference |
 |---|---|---|
-| Bitkey | The phone spends up to a daily transfer limit without the hardware device; a transaction that puts you over the limit needs hardware approval ([Bitkey support](https://support.bitkey.world/hc/en-us/articles/18800065958420-What-happens-if-I-exceed-my-daily-transfer-limit)) | Any chain via NEAR Intents; balance is confidential; income is split on arrival |
+| Bitkey | The phone spends up to a daily transfer limit without the hardware device; a transaction that puts you over the limit needs hardware approval ([Bitkey support](https://support.bitkey.world/hc/en-us/articles/18800065958420-What-happens-if-I-exceed-my-daily-transfer-limit)) | Cross-chain intake via NEAR Intents (USDC on Solana today); balance is confidential; income is split on arrival |
 | Safe (spending limits, Delay modifier) | A chosen address can spend a capped amount of a token from a Safe account without the usual signatures, enforced onchain by the allowance module ([Safe help](https://help.safe.global/en/articles/40842-set-up-and-use-spending-limits)); the Zodiac Delay modifier queues transactions behind a cooldown before they can run ([Zodiac Delay](https://github.com/gnosisguild/zodiac-modifier-delay)) | Balances stay public there; no automatic split of incoming money |
 | Argent (guardians) | A transaction is started by the owner and approved by half the guardians, rounded up ([Argent support](https://support.argent.xyz/hc/en-us/articles/360008828238-Guardian-approvals-needed-in-Ethereum-account)) | Balances stay public there; no automatic split of incoming money |
 
