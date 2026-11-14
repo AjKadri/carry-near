@@ -2,7 +2,7 @@
 
 Robbed, scammed or hacked? They only get what you carry.
 
-Carry splits money the moment it arrives. You get paid through one link, from another chain (USDC on Solana, Base, Arbitrum or Ethereum, or USDT on Tron). A small, capped share goes to the pocket on your phone; the rest lands in a confidential NEAR reserve that the phone cannot see, reach or unlock. Whoever controls the phone (a robber, a scammer coaching you on a call, malware, a phishing approval) can take only what is in the pocket, plus refills you have already authorised from your laptop.
+Carry splits money the moment it arrives. You receive money through one link, from another chain (USDC on Solana, Base, Arbitrum or Ethereum, or USDT on Tron). A small, capped share goes to the pocket on your phone; the rest lands in a confidential NEAR reserve that the phone cannot see, reach or unlock. Whoever controls the phone (a robber, a scammer coaching you on a call, malware, a phishing approval) can take only what is in the pocket, plus refills you have already authorised from your laptop.
 
 Built at NEAR HACKATHON, November 2026. Tracks: Privacy & Private AI, Real-World Money, AI Security & Defense.
 
