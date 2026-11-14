@@ -107,3 +107,18 @@ test('sandbox API: the tour sample, the simulated withdrawal approval (own world
     assert.equal((await a.f('/api/sandbox/approve-withdrawal', { method: 'POST', body: { requestId: 'bogus' } })).status, 404);
   } finally { server.close(); sb.close(); }
 });
+
+test('Home is a "home device" in the UI: the word "laptop" appears only in the one definition, and the setup screen says so', () => {
+  const def = 'a laptop, desktop, tablet or spare phone that stays at home, never the phone you carry';
+  let defs = 0;
+  for (const f of fs.readdirSync('web/src').filter((n) => /\.(jsx?)$/.test(n))) {
+    const text = fs.readFileSync(`web/src/${f}`, 'utf8').split('\n').filter((l) => !/^\s*(\/\/|\/\*|\*)/.test(l)).join('\n');
+    defs += text.split(def).length - 1;
+    assert.equal(/laptop/i.test(text.split(def).join('')), false, `${f} still calls Home a laptop`);
+  }
+  assert.equal(defs, 1, 'the definition appears once in the UI');
+  assert.match(fs.readFileSync('web/src/App.jsx', 'utf8'), /<Gate title="Set up your home device">/);
+  const readme = fs.readFileSync('README.md', 'utf8');
+  assert.equal(readme.split(def).length - 1, 1, 'the README explains "home device" once');
+  assert.equal((readme.match(/laptop/gi) ?? []).length, 1, 'and "laptop" appears in the README only inside that explanation');
+});

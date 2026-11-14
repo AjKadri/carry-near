@@ -18,7 +18,7 @@ export function PhoneView({ status, pocket, ceiling, sendLimit, note, bills, fli
             <p className="muted limits"><span>Holds up to <span className="mono">{usdc(ceiling)}</span> USDC</span><span>Sends up to <span className="mono">{usdc(sendLimit)}</span> at a time</span><span>{note}</span></p>
           </>}
           {status === 'loading' && <p>Loading…</p>}
-          {status === 'unreadable' && <p>Cannot read the pocket. Pair this phone again from the laptop.</p>}
+          {status === 'unreadable' && <p>Cannot read the pocket. Pair this phone again from your home device.</p>}
         </div>
       </section>
 
@@ -83,7 +83,7 @@ export function Phone() {
   const flipIds = useFlipIds(bills?.body?.bills);
   const seq = useRef(0);
 
-  if (!key) return <section className="room teal"><div className="inner"><h1 className="label"><Ico as={Wallet} /> Pocket</h1><p className="amount-mid">Not paired</p><p>This phone is not paired. On your laptop, open Home and choose Pair phone, then scan the QR code.</p></div></section>;
+  if (!key) return <section className="room teal"><div className="inner"><h1 className="label"><Ico as={Wallet} /> Pocket</h1><p className="amount-mid">Not paired</p><p>This phone is not paired. On your home device, open Home and choose Pair phone, then scan the QR code.</p></div></section>;
   const send = async () => { setSending(true); setRes(null); const r = await plain('/api/phone/send', { method: 'POST', headers, body: { to, amountUsdc: Number(amt) } }); setRes({ ...r, amount: Number(amt).toFixed(2), play: ++seq.current }); setSending(false); reload(); };
   const payBill = async (id) => { const r = await plain(`/api/phone/bills/${id}/pay`, { method: 'POST', body: {} }); setRes({ ...r, amount: null, play: ++seq.current }); reloadBills(); reload(); };
   const status = s?.status === 200 ? 'ok' : s ? 'unreadable' : 'loading';

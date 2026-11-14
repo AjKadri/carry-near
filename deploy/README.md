@@ -9,7 +9,7 @@ Carry listens on 127.0.0.1:8797 only (8787 and 8788 are taken by other apps on t
 5. Create `/opt/carry/.env` (mode 600, owner `carry`) from `.env.example` with `CARRY_MODE=live`, the keys, `CARRY_PUBLIC_URL=https://carry.ajkadri.dev`. Never commit it.
 6. `sudo install -m 644 deploy/carry.service /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl enable --now carry`
 7. `sudo cp deploy/Caddyfile /etc/caddy/Caddyfile && sudo systemctl reload caddy`
-8. First setup: `sudo journalctl -u carry | grep -A2 "setup code"`, then open https://carry.ajkadri.dev/home on the laptop and enter the code. Do this before sharing the URL.
+8. First setup: `sudo journalctl -u carry | grep -A2 "setup code"`, then open https://carry.ajkadri.dev/home on your home device and enter the code. Do this before sharing the URL.
 9. Set the refill allowance on the home page (live mode starts at 0).
 
 ## The public sandbox (demo.carry.ajkadri.dev)

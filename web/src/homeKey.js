@@ -1,4 +1,4 @@
-// The laptop's device key. ECDSA P-256, generated with extractable=false: the private key can sign but can never be read
+// The home device's key. ECDSA P-256, generated with extractable=false: the private key can sign but can never be read
 // out, not even by this page's own code. It lives in IndexedDB as a CryptoKey object. Clearing the browser's site data
 // deletes it (re-pairing is then needed; funds stay safe behind the owner's NEAR admin wallet).
 import { clock, syncClock as syncClockOf } from './clock.js';

@@ -1,4 +1,4 @@
-// `npm run reset-home-key`: forget the registered laptop key (run this on the server). The next start prints a new one-time setup code.
+// `npm run reset-home-key`: forget the registered home-device key (run this on the server). The next start prints a new one-time setup code.
 import { loadConfig } from '../server/config.js';
 import { openStore } from '../server/store.js';
 import { makeHomeAuth } from '../server/homeauth.js';

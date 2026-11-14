@@ -49,7 +49,7 @@ export function describe(e) {
     case 'pair_claimed': return { tab: 'system', icon: Smartphone, text: 'A phone opened the pairing link' };
     case 'pair_confirmed': return { tab: 'system', icon: Smartphone, text: 'Phone pairing confirmed' };
     case 'halt_cleared': return { tab: 'system', icon: Server, text: 'Halt cleared' };
-    case 'home_key_registered': return { tab: 'system', icon: Landmark, text: 'This laptop was set up as your Home controller' };
+    case 'home_key_registered': return { tab: 'system', icon: Landmark, text: 'This device was set up as your home device' };
     case 'service_start': return { tab: 'system', icon: Server, text: `Service started (${d.mode ?? ''} mode)` };
     case 'wallet_state': return { tab: 'system', icon: Server, text: `Wallet check: ${d.role ?? ''} v${d.version ?? '?'}, ${d.locked ? 'locked' : 'NOT locked'}, ${d.frozen ? 'FROZEN' : 'not frozen'}` };
     case 'tick_warning': return { tab: 'system', icon: TriangleAlert, key: `tick_warning|${d.call}|${d.status}`, text: `Warning: the platform had a temporary problem (${d.status ?? 'timeout'}); retried, nothing changed`, plural: (n) => `${n} warnings: the platform had a temporary problem (${d.status ?? 'timeout'}); retried, nothing changed` };

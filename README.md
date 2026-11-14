@@ -2,17 +2,17 @@
 
 Robbed, scammed or hacked? They only get what you carry.
 
-Carry splits money the moment it arrives. You receive money through one link, from another chain (USDC on Solana, Base, Arbitrum or Ethereum, or USDT on Tron). A small, capped share goes to the pocket on your phone; the rest lands in a confidential NEAR reserve that the phone cannot see, reach or unlock. Whoever controls the phone (a robber, a scammer coaching you on a call, malware, a phishing approval) can take only what is in the pocket, plus refills you have already authorised from your laptop.
+Carry splits money the moment it arrives. You receive money through one link, from another chain (USDC on Solana, Base, Arbitrum or Ethereum, or USDT on Tron). A small, capped share goes to the pocket on your phone; the rest lands in a confidential NEAR reserve that the phone cannot see, reach or unlock. Whoever controls the phone (a robber, a scammer coaching you on a call, malware, a phishing approval) can take only what is in the pocket, plus refills you have already authorised from your home device (a laptop, desktop, tablet or spare phone that stays at home, never the phone you carry).
 
 Built at NEAR HACKATHON, November 2026. Tracks: Privacy & Private AI, Real-World Money, AI Security & Defense.
 
 - **Try it in your browser:** https://demo.carry.ajkadri.dev (a public sandbox: simulated money, your own private demo, nothing to install).
 - **Try it locally in 2 minutes, no keys:** `npm install && npm run demo` (Node 22.13+, simulated money). Steps under "Run it".
 - **Check the claims:** `npm run attack` replays 38 attacks from the phone's side; each prints its raw refusal.
-- **Live instance (the owner's):** https://carry.ajkadri.dev runs on NEAR mainnet with the owner's keys. The pay page is public; Home needs the owner's laptop key. To try Carry yourself, use the sandbox above, not this.
+- **Live instance (the owner's):** https://carry.ajkadri.dev runs on NEAR mainnet with the owner's keys. The pay page is public; Home answers only the owner's home device. To try Carry yourself, use the sandbox above, not this.
 - **Demo video:** _link added after recording_
 
-![Laptop Home shows 2.00 USDC protected; the phone shows only its 3.00 pocket.](docs/readme/hero.png)
+![Home shows 2.00 USDC protected; the phone shows only its 3.00 pocket.](docs/readme/hero.png)
 
 ## Why
 
@@ -36,8 +36,8 @@ The protective mechanics (caps, allow-lists, a separate vault) are not new. What
 - **Pay link and intake** ([`server/intake.js`](server/intake.js), [`server/chains.js`](server/chains.js), [`server/oneclick.js`](server/oneclick.js); page `/pay/:handle`): the payer picks a source (USDC on Solana, Base, Arbitrum or Ethereum, or USDT on Tron; offered only if 1Click's `/v0/tokens` lists it), enters an amount and their own address on that chain (checked per chain: Solana base58, EVM `0x…`, Tron base58check), and gets a 1Click deposit address. Whatever the source, it is delivered as USDC to the reserve's *confidential* balance with the 1Click partner key (no reserve key is involved). The page shows the fee and the lowest accepted amount from a dry quote for the chosen chain. Arrivals are tracked through 1Click `/v0/status` and logged as `payment_in` with the chain. **Tested live with a real payment: USDC on Solana and USDC on Base. Quote-tested only (live dry quotes, no money): Arbitrum, Ethereum, Tron.** Mock mode simulates all five.
 - **Guard** ([`server/guard.js`](server/guard.js), `test/guard.test.js`, `test/voter.test.js`): a pure, unit-tested function that decides which pending OutLayer approvals Carry's approver may vote on. It approves only (a) a confidential USDC transfer to the pocket that keeps it under the phone ceiling (set in config, default 20 USDC) and within the remaining total-refill allowance (set by you from Home), and (b) the stored bill (exact payee, exact amount, unused, before expiry). It refuses to vote on an approval that has expired or is older than 5 minutes, because OutLayer's vote endpoint does not refuse late votes. Everything else gets no vote and a logged reason.
 - **Refill engine** ([`server/engine.js`](server/engine.js), [`server/outlayer.js`](server/outlayer.js), `test/engine.test.js`, `test/tick-resilience.test.js`): one refill at a time, idempotent per arrival, state in SQLite. Each refill is requested, checked by the guard, reserved against the allowance, voted on and confirmed, with every step logged. A refill moves min(refill allowance, reserve balance, ceiling headroom), independent of the payment amount after fees. Reads retry on temporary 5xx errors and timeouts and log a soft `tick_warning`; idle ticks make no platform reads.
-- **Home controls** ([`server/homeauth.js`](server/homeauth.js), [`web/src/homeKey.js`](web/src/homeKey.js), `test/routes.test.js`): the laptop's browser makes a non-extractable ECDSA P-256 key (WebCrypto, kept in IndexedDB); the server stores only the public key, after a one-time console code. Every request under `/api/home/*` (bills, refill allowance, halt, exit request, pairing, reserve balance, full log) carries a signature over method, path, body hash, timestamp and a one-use nonce. A wrong signature, a timestamp more than 60 s off, a replayed nonce or a tampered body gets a bare 401 and is logged as `home_blocked`. The check runs before the route table, so nothing unsigned reaches a home route, and the phone API has no route that creates a bill, changes an amount, raises the allowance or reads the reserve.
-- **Phone pairing** ([`server/pairing.js`](server/pairing.js), `test/pairing-link.test.js`): the laptop shows a QR and a confirmation code; the phone claims it and shows the same code; only after the laptop user confirms does the phone receive its pocket credential, once, and nothing else. The "pairing link" under the QR is the same address as the QR (same session, same one-time secret, same 5-minute expiry); it is shown only on Home and can be claimed once. The secret travels in the URL fragment and an `X-Pair-Secret` header, never in a query string or a log.
+- **Home controls** ([`server/homeauth.js`](server/homeauth.js), [`web/src/homeKey.js`](web/src/homeKey.js), `test/routes.test.js`): the home device's browser makes a non-extractable ECDSA P-256 key (WebCrypto, kept in IndexedDB); the server stores only the public key, after a one-time console code. Every request under `/api/home/*` (bills, refill allowance, halt, exit request, pairing, reserve balance, full log) carries a signature over method, path, body hash, timestamp and a one-use nonce. A wrong signature, a timestamp more than 60 s off, a replayed nonce or a tampered body gets a bare 401 and is logged as `home_blocked`. The check runs before the route table, so nothing unsigned reaches a home route, and the phone API has no route that creates a bill, changes an amount, raises the allowance or reads the reserve.
+- **Phone pairing** ([`server/pairing.js`](server/pairing.js), `test/pairing-link.test.js`): the home device shows a QR and a confirmation code; the phone claims it and shows the same code; only after the home device's user confirms does the phone receive its pocket credential, once, and nothing else. The "pairing link" under the QR is the same address as the QR (same session, same one-time secret, same 5-minute expiry); it is shown only on Home and can be claimed once. The secret travels in the URL fragment and an `X-Pair-Secret` header, never in a query string or a log.
 - **Phone view and privacy** ([`web/src/phone.jsx`](web/src/phone.jsx), `test/phone-privacy.test.js`): the phone API reads the pocket balance and the bill list, never the reserve, and the phone never shows a reserve amount, in text, in the DOM or in any API response the phone view loads; the Protected band carries only its label. The test fails if any of that changes.
 - **Web app** (`web/src/`, [`web/src/tokens.css`](web/src/tokens.css)): every colour, font, size and motion value lives in `tokens.css`, and a test fails if a literal colour appears anywhere else. Home opens with a plain-words summary ("If your phone is lost tonight, at most X USDC is at risk", X = pocket plus refills still authorised) and the Protected amount, both Home-only; the activity log has Money and System tabs, folds repeated blocked requests and keeps the raw JSON behind "raw".
 - **Public sandbox** ([`server/sandbox.js`](server/sandbox.js), [`server/sandbox-main.js`](server/sandbox-main.js), `test/sandbox.test.js`): the same app in mock mode, but every visitor gets their own in-memory world (store, mock OutLayer and 1Click, home key, pairing) behind a random HttpOnly session cookie, so two browsers never see each other's balances, logs or pairing. Home sets itself up (the browser still makes its own non-extractable device key) and opens with a four-step guided tour (simulate a client payment, open the phone view, try to send 500, pay the rent from the phone), each step ticked by the session's real events; "Open the phone view" pairs a phone tab to the same demo, "Reset my demo" starts a fresh world, and a banner on every page says the money is simulated. Up to 500 worlds (least recently used dropped first), 2 hours idle expiry, 30 new worlds per IP per hour. It refuses to start unless `CARRY_MODE=mock` and no live key is in its environment, and it runs as a separate service from the live one. `npm run test:sandbox` runs the whole unit suite through the sandbox's session code path and `npm run attack:sandbox` runs the attack script through it.
@@ -73,13 +73,13 @@ The terminal prints a one-time setup code. Then:
 
 Other pages: the pay link is http://127.0.0.1:8787/pay/demo and the activity log is at the bottom of Home.
 
-**Using a real phone.** Home must be opened on the laptop at `http://127.0.0.1:8787/home`. To let a phone reach the pairing page, bind to the network and tell Carry its public address, and do the first setup before anyone else can reach the server:
+**Using a real phone.** Home must be opened on the home device, here the computer running Carry, at `http://127.0.0.1:8787/home`. To let a phone reach the pairing page, bind to the network and tell Carry its public address, and do the first setup before anyone else can reach the server:
 
 ```bash
 HOST=0.0.0.0 CARRY_PUBLIC_URL=http://192.168.1.20:8787 npm run demo
 ```
 
-Replace `192.168.1.20` with the laptop's address on your Wi-Fi. `CARRY_PUBLIC_URL` is the base address put in the QR code. The phone and the laptop must be on the same network. Home routes still need the laptop's signature, but anyone on that network can reach the pay and phone pages, so use it for a demo only.
+Replace `192.168.1.20` with the home device's address on your Wi-Fi. `CARRY_PUBLIC_URL` is the base address put in the QR code. The phone and the home device must be on the same network. Home routes still need the home device's signature, but anyone on that network can reach the pay and phone pages, so use it for a demo only.
 
 ```bash
 npm test          # unit tests
@@ -88,9 +88,17 @@ npm run attack    # the attack replay in mock mode
 
 ## Who runs Carry
 
-**Who runs Carry today.** Each Carry is one person's: their own reserve and pocket wallets, their own Home laptop. carry.ajkadri.dev is the author's own instance, on mainnet with real money, which is why its Home only answers the author's laptop. To try the full flow yourself, use the sandbox or run the demo locally.
+**Who runs Carry today.** Each Carry is one person's: their own reserve and pocket wallets, their own home device. carry.ajkadri.dev is the author's own instance, on mainnet with real money, which is why its Home only answers the author's home device. To try the full flow yourself, use the sandbox or run the demo locally.
 
 **Toward a hosted Carry.** Sign-up would create each user's own wallets and Home key. Carry's guard would run inside OutLayer's TEE, so no operator, including the author, could approve a transfer outside the user's rules.
+
+## If your phone is stolen, and getting your money out
+
+**What a thief with the phone can do.** Spend what is in the pocket (at most 10 USDC per send and 20 USDC per day, [`server/config.js`](server/config.js#L31-L32), enforced by the pocket's locked policy), plus any refill allowance you still have authorised. They cannot see or touch the reserve, raise a limit or change a bill: the phone API has [no such route](server/app.js#L72-L88), and `test/phone-privacy.test.js` checks it.
+
+**Cut it off.** On your home device, set the refill allowance to 0 (Home, "Authorise total refills", [`server/app.js`](server/app.js#L110)), so nothing more reaches the pocket. Then freeze the pocket wallet in the OutLayer dashboard: a frozen pocket refuses sends with 403 `wallet_frozen` (proven live, [`evidence/SPIKE.md`](evidence/SPIKE.md#L209)). Pairing a new phone does **not** revoke the old one today: every phone gets the same pocket key ([`server/services.js`](server/services.js#L32), [`server/pairing.js`](server/pairing.js#L48)).
+
+**Get your money out.** On your home device: Home, "Withdraw to your exit account", then approve the request in the OutLayer dashboard with your NEAR wallet ([`server/app.js`](server/app.js#L139)). It goes only to the fixed exit account ([`server/config.js`](server/config.js#L22)), at most 20 USDC per withdrawal and 60 USDC per day. That is by design: the reserve's policy is locked.
 
 ## Live mode
 
@@ -137,7 +145,7 @@ Everything below is on public chains. Full records, with the file each fact come
 
 ## Deployment
 
-A deployment runs at https://carry.ajkadri.dev (Ubuntu VPS, Caddy for HTTPS, systemd service running as a non-root user on a loopback port). The pay page, phone API and signed home routes are public; every home route needs the laptop key signature. Files and steps are in `deploy/`. The sandbox at https://demo.carry.ajkadri.dev is a second, separate service (own directory, own systemd unit with a memory cap, no `.env`, mock mode only); its files are in `deploy/` too.
+A deployment runs at https://carry.ajkadri.dev (Ubuntu VPS, Caddy for HTTPS, systemd service running as a non-root user on a loopback port). The pay page, phone API and signed home routes are public; every home route needs the home-device key signature. Files and steps are in `deploy/`. The sandbox at https://demo.carry.ajkadri.dev is a second, separate service (own directory, own systemd unit with a memory cap, no `.env`, mock mode only); its files are in `deploy/` too.
 
 ## Known limits
 
@@ -145,7 +153,8 @@ A deployment runs at https://carry.ajkadri.dev (Ubuntu VPS, Caddy for HTTPS, sys
 
 - The service holds the pocket key to read the pocket balance. A stolen service host therefore gets the pocket's caps and what the reserve policy allows, not the reserve.
 - OutLayer accepts any vote from the pinned signer key, so Carry's guard is the only thing deciding what is auto-approved. The approver key cannot be rotated once the reserve policy is locked.
-- Clearing the laptop browser's site data deletes the home key. Funds stay safe (moving them out needs the owner's NEAR admin wallet); you re-pair by running `npm run reset-home-key` on the server and setting up again. A recovery code is on the roadmap.
+- Every paired phone shares one pocket key; pairing a new phone does not revoke the old one, and freezing is done in the OutLayer dashboard, not from Home.
+- Clearing the home device browser's site data deletes the home key. Funds stay safe (moving them out needs the owner's NEAR admin wallet); you re-pair by running `npm run reset-home-key` on the server and setting up again. A recovery code is on the roadmap.
 - The key cannot be read out, but script running in the Carry page itself (for example through a cross-site scripting bug) could ask the browser to sign requests while the page is open.
 - Whoever can read the server console during first setup can register the home key, so do the first setup before exposing the server.
 - Pay-link sources: only USDC on Solana and USDC on Base have been tested with a real payment. USDC on Arbitrum and Ethereum and USDT on Tron are quote-tested only: live dry quotes on 14 Nov 2026 (`evidence/quotes-dry-2026-11-14T11-43-21-575Z.json`), no money sent, so a real deposit from those chains is untested. EVM refund addresses are checked for shape (`0x` plus 40 hex digits), not for the EIP-55 mixed-case checksum. Each chain has its own minimum (about 0.15 USDC on Base, 0.30 on Ethereum, 2.61 USDT on Tron; Solana and Arbitrum accepted 0.05), which moves with network costs.
@@ -153,9 +162,13 @@ A deployment runs at https://carry.ajkadri.dev (Ubuntu VPS, Caddy for HTTPS, sys
 
 ## Roadmap (not built)
 
-A recovery code for the home key (today, losing the laptop's browser data means re-pairing with `npm run reset-home-key`).
+A recovery code for the home key (today, losing the home device's browser data means re-pairing with `npm run reset-home-key`).
 
 Set up new reserves without a direct transfer from the owner's account.
+
+Per-phone keys with Revoke on Home.
+
+Freeze the pocket from Home.
 
 Hosted sign-up with each user's own wallets; the guard runs in OutLayer's TEE so no operator holds approval power.
 

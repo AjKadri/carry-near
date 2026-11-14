@@ -99,7 +99,7 @@ test('"Forget this browser\'s key" is hidden behind "More options" and needs a c
   const html = renderToStaticMarkup(React.createElement(Unrecognised, { onRetry() {}, onForget() {} }));
   assert.match(html, /More options/); assert.match(html, /Try again/);
   assert.equal(html.includes("Forget this browser's key"), false, 'not offered up front');
-  assert.match(FORGET_WARNING, /locks this laptop out/); assert.match(FORGET_WARNING, /reset-home-key/);
+  assert.match(FORGET_WARNING, /locks this device out/); assert.match(FORGET_WARNING, /reset-home-key/);
   let cleared = 0, after = 0;
   assert.equal(await forgetWithConfirm({ confirmFn: () => false, clearKey: async () => { cleared++; }, after: async () => { after++; } }), false);
   assert.deepEqual([cleared, after], [0, 0]);                                       // "Cancel": nothing is forgotten

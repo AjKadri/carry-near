@@ -1,4 +1,4 @@
-// Home authentication: ONE laptop device key. The browser holds a NON-EXTRACTABLE ECDSA P-256 private key;
+// Home authentication: ONE home-device key. The browser holds a NON-EXTRACTABLE ECDSA P-256 private key;
 // the server stores only the public key. Every home request is signed over
 //   CARRY1 \n METHOD \n path+query \n sha256(body) \n timestamp(ms) \n nonce
 // and rejected if the signature is wrong, the timestamp is more than 60 s off, or the nonce was already used.

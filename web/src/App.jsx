@@ -205,9 +205,9 @@ function PairPhone({ id }) {
         <p className="label">Pairing</p>
         <h1>Pair this phone</h1>
         {state === 'claiming' && <p>Connecting…</p>}
-        {state === 'waiting' && <><p>Check that your laptop shows this same code, then confirm on the laptop.</p><p className="code mono">{code}</p></>}
+        {state === 'waiting' && <><p>Check that your home device shows this same code, then confirm on the home device.</p><p className="code mono">{code}</p></>}
         {state === 'paired' && <p>Paired. <a href="/phone">Open the pocket</a></p>}
-        {state === 'failed' && <Refused><p>This pairing link did not work or has expired. Start again on the laptop.</p></Refused>}
+        {state === 'failed' && <Refused><p>This pairing link did not work or has expired. Start again on your home device.</p></Refused>}
       </div>
     </section>
   );
@@ -254,13 +254,13 @@ function HomeGate() {
   };
   if (stage === 'loading') return <Gate title="Home"><p>Loading…</p></Gate>;
   if (stage === 'setup') return (
-    <Gate title="Set up this laptop">
-      <p className="lede">Carry will only take orders from this browser. Enter the one-time setup code shown on the server console. This browser then makes a private key that cannot be exported; the server keeps only its public half.</p>
+    <Gate title="Set up your home device">
+      <p className="lede">Your home device is a laptop, desktop, tablet or spare phone that stays at home, never the phone you carry. Carry will only take orders from this browser. Enter the one-time setup code shown on the server console. This browser then makes a private key that cannot be exported; the server keeps only its public half.</p>
       <div className="form"><label>Setup code<input className="mono" value={code} onChange={(e) => setCode(e.target.value)} /></label><button className="action" onClick={setup}>Set up</button></div>
       {error && <Refused><p className="mono refusal-raw">{error}</p></Refused>}
     </Gate>
   );
-  if (stage === 'blocked') return <Gate title="Home"><Refused head="Blocked"><p>Another browser is set up as this Carry's home. Open Home on that laptop. If you lost it, run <code className="mono">npm run reset-home-key</code> on the server and set up again. Your funds stay safe either way: moving them out needs the owner's NEAR wallet.</p></Refused></Gate>;
+  if (stage === 'blocked') return <Gate title="Home"><Refused head="Blocked"><p>Another browser is set up as this Carry's home. Open Home on that home device. If you lost it, run <code className="mono">npm run reset-home-key</code> on the server and set up again. Your funds stay safe either way: moving them out needs the owner's NEAR wallet.</p></Refused></Gate>;
   if (stage === 'unrecognised') return <Gate title="Home"><Unrecognised onRetry={() => { setStage('loading'); check(); }} onForget={() => forgetWithConfirm({ confirmFn: (m) => window.confirm(m), clearKey, after: check })} /></Gate>;
   return <HomeApp onUnrecognised={() => (sandbox ? sandboxReset().then(() => window.location.reload()) : setStage('unrecognised'))} />;
 }

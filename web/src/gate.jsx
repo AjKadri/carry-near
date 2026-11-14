@@ -1,9 +1,9 @@
 // Home's connection states: a transient problem, and "this browser's key is not the registered one".
 import React, { useState } from 'react';
 
-export const FORGET_WARNING = "Forget this browser's key?\n\nThis locks this laptop out of Home until `npm run reset-home-key` is run on the server and you set Home up again with a new code. Your money stays safe either way.\n\nOnly do this if you are sure this is not a temporary problem.";
+export const FORGET_WARNING = "Forget this browser's key?\n\nThis locks this device out of Home until `npm run reset-home-key` is run on the server and you set Home up again with a new code. Your money stays safe either way.\n\nOnly do this if you are sure this is not a temporary problem.";
 
-// "Forget" is destructive for this laptop, so it only runs after an explicit yes.
+// "Forget" is destructive for this device, so it only runs after an explicit yes.
 export async function forgetWithConfirm({ confirmFn, clearKey, after }) {
   if (!confirmFn(FORGET_WARNING)) return false;
   await clearKey();
@@ -26,7 +26,7 @@ export function Unrecognised({ onRetry, onForget }) {
       {!more && <p><a href="#more-options" onClick={(e) => { e.preventDefault(); setMore(true); }}>More options</a></p>}
       {more && (
         <div className="stack" id="more-options">
-          <p className="muted">If you are sure this is the wrong laptop, you can forget this browser's key. That locks this laptop out until <code className="mono">npm run reset-home-key</code> runs on the server.</p>
+          <p className="muted">If you are sure this is the wrong device, you can forget this browser's key. That locks this device out until <code className="mono">npm run reset-home-key</code> runs on the server.</p>
           <p><button className="ghost" onClick={onForget}>Forget this browser's key</button></p>
         </div>
       )}
