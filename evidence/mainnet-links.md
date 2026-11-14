@@ -66,3 +66,17 @@ I also read OutLayer's own records for the two refills Carry itself made on 11 N
 | `b4d1fe29-1ee7-4e07-a103-f58ce68f65ae` | live attack run B8, 0.030000 USDC, 13:01 UTC | success | empty | `5es9AtGsnjcGHF5RcVCNsAZheimF1MZ7NJJK2LEUztbP` |
 
 Both are `type: confidential_transfer` with `confidential: true`, and the responses carry no transaction hash of any chain (`nearTxHashes`, `originChainTxHashes` and `destinationChainTxHashes` are all empty). They are moves inside the intents system, so there is no NearBlocks transaction to link; that is also why the pocket's own NearBlocks token-transfer list is empty. The `intent_hash` values are OutLayer identifiers, not NEAR transaction hashes, and I did not try to resolve them on an explorer. (`e1a3b4d0…` is from the local live run database, `carry/data/live.db`, which is not in the repository; the request id is the only thing taken from it.)
+
+## 6. Pay-link sources: live dry quotes, 14 Nov 2026
+
+`npm run quote-check` asks 1Click for **dry** quotes (`dry: true`: no deposit address, nothing reserved, no money moves) for every source chain that `/v0/tokens` lists, at 0.05, 0.25, 0.5, 1, 5, 10 and 100 units, always to the same destination: USDC delivered to the reserve's confidential balance (`recipientType: CONFIDENTIAL_INTENTS`). Raw requests (reserve account redacted) and responses: `evidence/quotes-dry-2026-11-14T11-43-21-575Z.json`. All five requested sources were listed by `/v0/tokens`.
+
+| Source | Lowest amount refused / accepted | Fee at 1 / 10 / 100 (source units) | Payment tested live? |
+|---|---|---|---|
+| USDC on Solana | accepted 0.05 | 0.000202 / 0.000491 / 0.004911 | **Yes**, a real 1 USDC payment (section 1) |
+| USDC on Base | refused below 0.15; accepted 0.25 | 0.000202 / 0.000433 / 0.004327 | No (quote only) |
+| USDC on Arbitrum | accepted 0.05 | 0.000202 / 0.000569 / 0.005687 | No (quote only) |
+| USDC on Ethereum | refused below 0.300001; accepted 0.5 | 0.000202 / 0.000482 / 0.004816 | No (quote only) |
+| USDT on Tron | refused below about 2.61 (2.613288 to 2.613801 over the run); accepted 5 | 0.004214 / 0.007842 / 0.078415 | No (quote only) |
+
+The fee is the amount in minus the quoted amount out (it includes the price difference between USDT and USDC on Tron). Refusals are 1Click's own: `Amount is too low for bridge, try at least <units>`. One lesson from this run: 1Click rejects a token contract or mint as `refundTo` with a bare "Internal server error" (HTTP 400); a normal wallet address works.
