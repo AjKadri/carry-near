@@ -4,5 +4,5 @@ import { App } from './App.jsx';
 import './style.css';
 // One request first: in the public sandbox it gives this browser its session cookie before the page fires several requests at once
 // (without it each of them would start its own world). On the live instance it is just a cheap health check.
-await fetch('/api/mode', { cache: 'no-store' }).catch(() => {});
+await fetch('/api/mode', { cache: 'no-store', signal: AbortSignal.timeout(4000) }).catch(() => {}); // never holds the page back more than 4 s
 createRoot(document.getElementById('root')).render(<App />);

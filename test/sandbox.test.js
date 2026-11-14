@@ -194,5 +194,6 @@ test('only recently used worlds are ticked, and one world cannot reach another t
 
 test('the page gets its session cookie with one request before it fires several at once (otherwise each would start its own world)', () => {
   const main = fs.readFileSync('web/src/main.jsx', 'utf8');
+  assert.match(main, /AbortSignal\.timeout\(/, 'the first request has a timeout');
   assert.ok(main.indexOf("await fetch('/api/mode'") !== -1 && main.indexOf("await fetch('/api/mode'") < main.indexOf('createRoot('), 'main.jsx must await /api/mode before rendering');
 });
