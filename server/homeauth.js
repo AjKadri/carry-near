@@ -19,6 +19,9 @@ export function makeHomeAuth({ store, now = Date.now }) {
   const publicKey = () => { const b64 = store.getStr(KEY); return b64 ? crypto.createPublicKey({ key: Buffer.from(b64, 'base64'), format: 'der', type: 'spki' }) : null; };
   const auth = {
     registered: () => store.getStr(KEY) !== null,
+    now: () => now(),
+    // sha256 of the registered public key (DER), hex. Public information; lets a browser ask "is MY key the registered one?" without signing anything.
+    fingerprint() { const b64 = store.getStr(KEY); return b64 ? crypto.createHash('sha256').update(Buffer.from(b64, 'base64')).digest('hex') : null; },
     // Printed on the server console at start while no key is registered. Never sent over the network.
     setupCode() { if (auth.registered()) return null; return (setupCode ??= newCode()); },
     register({ publicKeySpkiB64, code }) {

@@ -24,6 +24,7 @@ export function createApp(svc, { sandbox = false, noStatic = false } = {}) {
     res.set({ 'Content-Security-Policy': "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'", 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer', 'X-Frame-Options': 'DENY' });
     next();
   });
+  app.use('/api', (_req, res, next) => { res.set('Cache-Control', 'no-store'); next(); }); // never reuse an API answer (a cached one carries an old Date header and old data, e.g. after the back button)
   app.use(express.json({ limit: '10kb', verify: (req, _res, buf) => { req.rawBody = buf; } })); // the signature covers the raw bytes
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
   app.get('/api/mode', (_req, res) => res.json({
@@ -34,7 +35,12 @@ export function createApp(svc, { sandbox = false, noStatic = false } = {}) {
   }));
 
   // ---------------- unsigned: device-key setup (one time, needs the code printed on the server console)
-  app.get('/api/home/auth/status', (_req, res) => res.json({ registered: auth.registered() }));
+  // Public: is a key registered, what time does the server think it is, and (if the browser sends the fingerprint of its own public key) is that the registered one?
+  // The fingerprint is a hash of a public key, so this reveals nothing secret. The browser uses it to tell "this key is not the registered one" from a transient failure.
+  app.get('/api/home/auth/status', (req, res) => {
+    const fp = /^[0-9a-f]{64}$/.test(String(req.query.key ?? '')) ? String(req.query.key) : null;
+    res.json({ registered: auth.registered(), serverTime: auth.now(), matches: fp && auth.registered() ? fp === auth.fingerprint() : null });
+  });
   app.post('/api/home/auth/setup', (req, res) => {
     const r = auth.register({ publicKeySpkiB64: req.body?.publicKey, code: req.body?.setupCode });
     res.status(r.ok ? 200 : r.status).json(r.ok ? { ok: true } : { error: r.error });

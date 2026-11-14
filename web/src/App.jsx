@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
-import { loadKey, createKey, clearKey, publicKeySpkiB64, signedFetch } from './homeKey.js';
+import { loadKey, createKey, clearKey, publicKeySpkiB64, signedFetch, keyStatus, classifyRefusal } from './homeKey.js';
+import { HomeLinkBanner, Unrecognised, forgetWithConfirm } from './gate.jsx';
 import { plain, usePoll } from './api.js';
 import { Split, Tiles, BillTile, Refusal, usdc } from './parts.jsx';
 import { SLOTS, usePocketMotion, useFlipIds } from './motion.js';
@@ -57,7 +58,7 @@ function Landing({ mode }) {
         <p className="lede">Carry splits money the moment it arrives: a small, capped share goes to the pocket on your phone, and the rest lands in a confidential NEAR reserve that the phone cannot see, reach or unlock.</p>
         <div className="actions">
           <a className="btn action" href={mode.sandboxUrl}>Try it yourself: sandbox, about 2 minutes</a>
-          <a className="btn ghost" href="/home">Live mainnet instance (owner's)</a>
+          <a className="btn ghost" href="/home">See the author's live Carry (mainnet)</a>
         </div>
         <ul className="links">
           <li><a href={mode.repoUrl}>GitHub repository</a></li>
@@ -194,11 +195,13 @@ function HomeGate() {
   const [stage, setStage] = useState('loading'); // loading | setup | blocked | ready | unrecognised
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
+  const [sandbox, setSandbox] = useState(false);
   const check = useCallback(async () => {
     const s = await plain('/api/home/auth/status');
     const key = await loadKey();
-    const sandbox = (await plain('/api/mode')).body?.sandbox;
-    if (sandbox) { // the public sandbox sets Home up by itself: the browser still makes its own device key and registers it the normal way
+    const isSandbox = !!(await plain('/api/mode')).body?.sandbox;
+    setSandbox(isSandbox);
+    if (isSandbox) { // the public sandbox sets Home up by itself: the browser still makes its own device key and registers it the normal way
       if (!s.body?.registered) {
         try {
           const c = await plain('/api/sandbox/setup-code');
@@ -233,8 +236,8 @@ function HomeGate() {
     </Gate>
   );
   if (stage === 'blocked') return <Gate title="Home"><Refused head="Blocked"><p>Another browser is set up as this Carry's home. Open Home on that laptop. If you lost it, run <code className="mono">npm run reset-home-key</code> on the server and set up again. Your funds stay safe either way: moving them out needs the owner's NEAR wallet.</p></Refused></Gate>;
-  if (stage === 'unrecognised') return <Gate title="Home"><Refused head="Blocked"><p>The server does not recognise this browser's key.</p></Refused><p><button className="ghost" onClick={async () => { await clearKey(); check(); }}>Forget this browser's key</button></p></Gate>;
-  return <HomeApp onUnrecognised={() => (sandboxReset().then(() => window.location.reload()))} />;
+  if (stage === 'unrecognised') return <Gate title="Home"><Unrecognised onRetry={() => { setStage('loading'); check(); }} onForget={() => forgetWithConfirm({ confirmFn: (m) => window.confirm(m), clearKey, after: check })} /></Gate>;
+  return <HomeApp onUnrecognised={() => (sandbox ? sandboxReset().then(() => window.location.reload()) : setStage('unrecognised'))} />;
 }
 
 function PairPanel({ paired }) {
@@ -291,14 +294,28 @@ function HomeApp({ onUnrecognised }) {
   const [exitAmt, setExitAmt] = useState('1');
   const [mode] = usePoll(() => plain('/api/mode'), [], 60000);
   const [msg, setMsg] = useState(null);
-  useEffect(() => { if (s?.status === 401) onUnrecognised(); }, [s?.status]); // eslint-disable-line react-hooks/exhaustive-deps
-  const st = s?.body;
+  // Keep showing the last good numbers through a hiccup. A refused home request has already been retried once after re-syncing the clock (homeKey.js);
+  // only if the server then says this key is not the registered one do we say "not recognised". Anything else is a transient problem: say so and keep polling.
+  const lastSt = useRef(null), lastLog = useRef([]);
+  if (s?.status === 200) lastSt.current = s.body;
+  if (log?.status === 200) lastLog.current = log.body?.events ?? [];
+  const [problem, setProblem] = useState(false);
+  const asking = useRef(false);
+  useEffect(() => {
+    const bad = (s && s.status !== 200) || (log && log.status !== 200);
+    if (!bad) { setProblem(false); return; }
+    if (s?.status !== 401 && log?.status !== 401) { setProblem(true); return; }
+    if (asking.current) return;
+    asking.current = true;
+    keyStatus().then((k) => { if (classifyRefusal(k) === 'unrecognised') onUnrecognised(); else setProblem(true); }).finally(() => { asking.current = false; });
+  }, [s, log]); // eslint-disable-line react-hooks/exhaustive-deps
+  const st = lastSt.current ?? undefined;
   const act = async (p, init, describe) => {
     const r = await signedFetch(p, init);
     setMsg(r.status === 200 ? { where: p, ok: true, text: describe ? describe(r.body) : 'Saved.' } : { where: p, ok: false, status: r.status, body: r.body });
     reloadS(); reloadLog();
   };
-  const events = log?.body?.events ?? [];
+  const events = lastLog.current;
   const day = paydayFrom(events);
   const [, tiles] = usePocketMotion(st?.reserve !== undefined ? st.pocket : null, st?.ceiling);
   const flipIds = useFlipIds(st?.bills);
@@ -315,6 +332,7 @@ function HomeApp({ onUnrecognised }) {
   const bills = st?.bills ?? [];
   return (
     <>
+      <HomeLinkBanner problem={problem} />
       <HomeSummary st={st}>
         {st?.halted && <Refused head={st.halted.code}><p>Refills are halted until reviewed. <button className="ghost" onClick={() => act('/api/home/engine/clear-halt', { method: 'POST' }, () => 'Halt cleared. Refills resume on the next cycle.')}>Clear</button></p></Refused>}
       </HomeSummary>

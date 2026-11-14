@@ -91,9 +91,10 @@ test('phone: the rendered phone view has no reserve amount, and the Protected ba
 test('phone source loads no home routes and imports nothing from the home side', () => {
   const src = ['phone.jsx', 'parts.jsx', 'motion.js'].map((f) => fs.readFileSync(`web/src/${f}`, 'utf8')).join('\n');
   assert.ok(!/api\/home|signedFetch|homeKey|loadKey|createKey/.test(src));
-  const api = fs.readFileSync('web/src/api.js', 'utf8'); // the shared fetch helper only reads the server clock from homeKey.js, nothing that signs
-  assert.deepEqual([...api.matchAll(/from '\.\/homeKey\.js'/g)].length, 1);
-  assert.match(api, /import \{ syncClock \} from '\.\/homeKey\.js'/);
+  const api = fs.readFileSync('web/src/api.js', 'utf8'); // the shared fetch helper only reads the server clock, from clock.js, and imports nothing from the signing code in homeKey.js
+  assert.equal(/homeKey/.test(api), false);
+  assert.match(api, /import \{ syncClock \} from '\.\/clock\.js'/);
+  assert.equal(/import /.test(fs.readFileSync('web/src/clock.js', 'utf8')), false); // clock.js is one number and imports nothing
 });
 
 test('no literal colours outside web/src/tokens.css', () => {

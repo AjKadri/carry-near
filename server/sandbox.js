@@ -96,7 +96,7 @@ export function createSandbox({
     res.set({ 'Content-Security-Policy': "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'", 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer', 'X-Frame-Options': 'DENY' });
     next();
   });
-  server.get('/api/health', (_req, res) => res.json({ ok: true, sandbox: true, worlds: sessions.size }));
+  server.get('/api/health', (_req, res) => { res.set('Cache-Control', 'no-store'); res.json({ ok: true, sandbox: true, worlds: sessions.size }); });
   // Everything under /api belongs to one visitor's world, picked by the cookie. A visitor without a (still valid) cookie gets a new world, if their IP is allowed one.
   server.use(async (req, res, next) => {
     if (!req.path.startsWith('/api/')) return next();

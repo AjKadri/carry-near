@@ -86,6 +86,12 @@ npm test          # unit tests
 npm run attack    # the attack replay in mock mode
 ```
 
+## Who runs Carry
+
+**Who runs Carry today.** Each Carry is one person's: their own reserve and pocket wallets, their own Home laptop. carry.ajkadri.dev is the author's own instance, on mainnet with real money, which is why its Home only answers the author's laptop. To try the full flow yourself, use the sandbox or run the demo locally.
+
+**Toward a hosted Carry.** Sign-up would create each user's own wallets and Home key. Carry's guard would run inside OutLayer's TEE, so no operator, including the author, could approve a transfer outside the user's rules.
+
 ## Live mode
 
 `CARRY_MODE=live` needs the keys in `.env.example`. It starts with a refill allowance of 0, so nothing moves until the owner sets one on the home page. At start it logs each wallet's policy version and locked state. Live mode has been run against mainnet with the locked reserve and pocket wallets: one end-to-end payment and refill, and four recorded live attack runs (see "Attack results" and "Mainnet evidence" below). The deployment at carry.ajkadri.dev runs in live mode.
@@ -150,6 +156,8 @@ A deployment runs at https://carry.ajkadri.dev (Ubuntu VPS, Caddy for HTTPS, sys
 A recovery code for the home key (today, losing the laptop's browser data means re-pairing with `npm run reset-home-key`).
 
 Set up new reserves without a direct transfer from the owner's account.
+
+Hosted sign-up with each user's own wallets; the guard runs in OutLayer's TEE so no operator holds approval power.
 
 ## Disclosure
 

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { syncClock } from './homeKey.js';
+import { syncClock } from './clock.js';
 
 export const plain = async (path, init = {}) => {
-  const r = await fetch(path, { ...init, headers: { 'Content-Type': 'application/json', ...(init.headers ?? {}) }, body: init.body ? JSON.stringify(init.body) : undefined });
+  const r = await fetch(path, { cache: 'no-store', ...init, headers: { 'Content-Type': 'application/json', ...(init.headers ?? {}) }, body: init.body ? JSON.stringify(init.body) : undefined });
   syncClock(r);
   return { status: r.status, body: await r.json().catch(() => null) };
 };
